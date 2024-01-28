@@ -1,3 +1,4 @@
 /target
 # dont push config files
 /config 
+/remind/config
