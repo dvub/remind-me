@@ -1,0 +1,8 @@
+[[reminders]]
+name = "Hello, world!"
+description = "..."
+frequency = 0
+[[reminders]]
+name = "Hello, world!"
+description = "..."
+frequency = 3
