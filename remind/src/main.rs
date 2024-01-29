@@ -96,7 +96,7 @@ async fn run(file: &Path) -> anyhow::Result<()> {
     loop {
         let reminders = collect_reminders_from_file(file)?;
         // TODO: don't clone here!
-        let tasks = collect_and_run_tasks(reminders);
+        let tasks = collect_and_run_tasks(reminders.clone());
 
         // at the moment, we don't care about what the message is
         // we just need to wait for a change to happen
@@ -110,6 +110,29 @@ async fn run(file: &Path) -> anyhow::Result<()> {
         sleep(Duration::from_millis(1000)).await;
         // now that we know there's been a change, restart tasks
         let new_reminders = collect_reminders_from_file(file)?;
+
+        let added: Vec<_> = new_reminders
+            .iter()
+            .filter(|&item| !reminders.contains(item))
+            .cloned()
+            .collect();
+
+        let removed: Vec<_> = reminders
+            .iter()
+            .filter(|&item| !new_reminders.contains(item))
+            .cloned()
+            .collect();
+
+        let changed: Vec<_> = reminders
+            .iter()
+            .zip(new_reminders.iter())
+            .filter(|(a, b)| a != b)
+            .map(|(a, _b)| a)
+            .collect();
+
+        println!("added: {added:?}");
+        println!("rmd: {removed:?}");
+        println!("changed: {changed:?}");
         if !tasks.is_empty() {
             for task in &tasks {
                 task.abort();
