@@ -1,46 +1,34 @@
+use core::{collect_reminders_from_file, Reminder};
 use daemonize::Daemonize;
 use notify::{
     Config, Event, EventKind, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
 use notify_rust::Notification;
-use serde::Deserialize;
 use std::env;
 use std::fs::{create_dir, File};
 use std::path::Path;
-use std::{fs, time::Duration};
+use std::time::Duration;
 use tokio::sync::mpsc::{channel, Receiver};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
-
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
-struct Reminder {
-    name: String,
-    description: String,
-    frequency: i32,
-    icon: Option<String>,
-}
-
-// this struct may be used for any other configuration
-// if needed in the future
-#[derive(Debug, Deserialize, Clone)]
-struct AllReminders {
-    reminders: Vec<Reminder>,
-}
-
 // thank you kyillingene
 // for helping me learn about async rust programming
 // this would have taken hours without help
 
+// TODO: do NOT restart EVERY TASK. ONLY THE ONE THAT WAS MODIFIED
 fn main() -> anyhow::Result<()> {
     let stdout = File::create("/tmp/daemon.out")?;
     let stderr = File::create("/tmp/daemon.err")?;
 
+    println!();
+    println!("initializing remind-me daemon...");
+    println!();
     let config_dir_name = "config";
     let config_file_name = "Config.toml";
-
     // TODO:
     // should this be current_exe?
     let current_dir = env::current_dir()?;
+    println!("current dir: {current_dir:?}");
     let config_dir = current_dir.join(config_dir_name);
 
     let file = config_dir.join(config_file_name);
@@ -59,12 +47,12 @@ fn main() -> anyhow::Result<()> {
         .working_directory(current_dir);
 
     // comment the match statement to not daemonize
-    match daemonize.start() {
+    /*match daemonize.start() {
         Ok(_) => {
             println!("successfully started daemon");
         }
         Err(e) => eprintln!("there was an error starting the daemon: {e}"),
-    }
+    }*/
     run(&file)?;
     Ok(())
 }
@@ -105,20 +93,6 @@ async fn run(file: &Path) -> anyhow::Result<()> {
 
         // loop will restart, so tasks will restart
     }
-}
-fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>> {
-    // read the target file and parse them into a data structure
-    println!("reading configuration file for reminders...");
-    let toml_str = fs::read_to_string(file)?;
-    // println!("File content: {:?}", toml_str);
-
-    if toml_str.is_empty() {
-        return Ok(Vec::new());
-    }
-    let res: AllReminders = toml::from_str(&toml_str)?;
-    let reminders = res.reminders;
-    println!("successfully read file into memory...");
-    Ok(reminders)
 }
 
 fn collect_and_run_tasks(reminders: Vec<Reminder>) -> Vec<JoinHandle<anyhow::Result<()>>> {
@@ -182,35 +156,5 @@ async fn run_reminder(reminder: Reminder) -> anyhow::Result<()> {
             .summary(&format!("{} Reminder: {}", icon, &reminder.name))
             .body(&reminder.description)
             .show()?;
-    }
-}
-
-// why am i even commenting this
-#[cfg(test)]
-mod tests {
-    use crate::{AllReminders, Reminder};
-    use std::fs;
-
-    impl Reminder {
-        fn new(name: &str, description: &str, timeout: i32) -> Self {
-            Reminder {
-                name: name.to_string(),
-                description: description.to_owned(),
-                frequency: timeout,
-                icon: None,
-            }
-        }
-    }
-
-    #[test]
-    fn read_toml() {
-        let str = fs::read_to_string("config/Test.toml")
-            .expect("There was an error reading the test toml file.");
-        let toml: Result<AllReminders, toml::de::Error> = toml::from_str(&str);
-        assert!(toml.is_ok());
-
-        let reminders = toml.unwrap().reminders;
-        assert_eq!(reminders.len(), 2);
-        assert_eq!(reminders[0], Reminder::new("Hello, world!", "...", 0));
     }
 }
