@@ -111,6 +111,7 @@ async fn run(file: &Path) -> anyhow::Result<()> {
         // now that we know there's been a change, restart tasks
         let new_reminders = collect_reminders_from_file(file)?;
 
+        /*
         let added: Vec<_> = new_reminders
             .iter()
             .filter(|&item| !reminders.contains(item))
@@ -122,17 +123,17 @@ async fn run(file: &Path) -> anyhow::Result<()> {
             .filter(|&item| !new_reminders.contains(item))
             .cloned()
             .collect();
-
+        */
         let changed: Vec<_> = reminders
             .iter()
             .zip(new_reminders.iter())
-            .filter(|(a, b)| a != b)
-            .map(|(a, _b)| a)
+            .filter(|(old, new)| old != new)
+            .map(|(_old, new)| new) // return new because we dont care about the old data
             .collect();
 
-        println!("added: {added:?}");
-        println!("rmd: {removed:?}");
-        println!("changed: {changed:?}");
+        //println!("added: {added:?}");
+        //println!("rmd: {removed:?}");
+        println!("changed: {:?}", changed);
         if !tasks.is_empty() {
             for task in &tasks {
                 task.abort();
