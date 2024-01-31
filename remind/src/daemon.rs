@@ -53,6 +53,7 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
         let mut hasher = DefaultHasher::new();
         let to_abort: Vec<_> = reminders
             .iter()
+            .filter(|r| !new_reminders.contains(r))
             .map(|reminder| {
                 reminder.hash(&mut hasher);
                 hasher.finish()
@@ -60,7 +61,7 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
             .collect();
 
         for (handle, hash) in &tasks {
-            if to_abort.binary_search(hash).is_ok() {
+            if to_abort.iter().any(|abort_hash| abort_hash == hash) {
                 handle.abort();
                 println!("aborted a task: {hash}");
             }
