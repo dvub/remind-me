@@ -3,6 +3,7 @@ use daemonize::Daemonize;
 use notify::{
     Config, Event, EventKind, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
+use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, FileIdMap};
 use notify_rust::Notification;
 use std::{
     env,
@@ -89,62 +90,55 @@ pub fn configure_daemon(current_dir: &Path) -> anyhow::Result<Daemonize<()>> {
 
 #[tokio::main]
 async fn run(file: &Path) -> anyhow::Result<()> {
-    let (mut watcher, mut rx) = gen_watcher_receiver()?;
-    watcher.watch(file, RecursiveMode::NonRecursive)?;
+    let (mut debouncer, mut rx) = gen_watcher_receiver()?;
+    debouncer
+        .watcher()
+        .watch(file, RecursiveMode::NonRecursive)?;
 
-    // let mut matching: Vec<Reminder> = Vec::new();
+    let mut reminders = collect_reminders_from_file(file)?;
+    let mut tasks = collect_and_run_tasks(reminders.clone());
     loop {
-        let reminders = collect_reminders_from_file(file)?;
-        // TODO: don't clone here!
-        let tasks = collect_and_run_tasks(reminders.clone());
-
         // at the moment, we don't care about what the message is
         // we just need to wait for a change to happen
-        rx.recv().await.unwrap();
-        // TODO: fix this
-        // currently, the receiver can detect a file change and trigger a reload of all tasks
-        // *before* the file has been rewritten (i think?)
-        // so the collect function will read an empty file
-        // i added this delay to (hopefully) finish modifying the file before reading
-        // it seems to work for now
-        sleep(Duration::from_millis(1000)).await;
+        let _ = rx.recv().await.unwrap();
         // now that we know there's been a change, restart tasks
         let new_reminders = collect_reminders_from_file(file)?;
-
-        /*
-        let added: Vec<_> = new_reminders
+        let to_abort: Vec<_> = reminders
             .iter()
-            .filter(|&item| !reminders.contains(item))
-            .cloned()
+            .filter(|x| !new_reminders.contains(x))
             .collect();
 
-        let removed: Vec<_> = reminders
-            .iter()
-            .filter(|&item| !new_reminders.contains(item))
-            .cloned()
-            .collect();
-        */
-        let changed: Vec<_> = reminders
-            .iter()
-            .zip(new_reminders.iter())
-            .filter(|(old, new)| old != new)
-            .map(|(_old, new)| new) // return new because we dont care about the old data
-            .collect();
+        println!();
+        println!("stopping the following tasks: {:?}", to_abort);
+        println!();
 
-        //println!("added: {added:?}");
-        //println!("rmd: {removed:?}");
-        println!("changed: {:?}", changed);
-        if !tasks.is_empty() {
-            for task in &tasks {
-                task.abort();
+        for task in &tasks {
+            for t in &to_abort {
+                if task.1 == **t {
+                    task.0.abort();
+                    println!("aborting a task");
+                }
             }
         }
 
-        // loop will restart, so tasks will restart
+        let to_start: Vec<_> = new_reminders
+            .iter()
+            .filter(|x| !reminders.contains(*x))
+            .cloned()
+            .collect();
+
+        println!();
+        println!("starting the following tasks: {:?}", to_start);
+        println!();
+        //
+        tasks = collect_and_run_tasks(to_start);
+        reminders = new_reminders;
     }
 }
 
-fn collect_and_run_tasks(reminders: Vec<Reminder>) -> Vec<JoinHandle<anyhow::Result<()>>> {
+fn collect_and_run_tasks(
+    reminders: Vec<Reminder>,
+) -> Vec<(JoinHandle<anyhow::Result<()>>, Reminder)> {
     if reminders.is_empty() {
         println!("no reminders were round/read. WARNING: not spawning any tasks");
         return Vec::new();
@@ -154,7 +148,7 @@ fn collect_and_run_tasks(reminders: Vec<Reminder>) -> Vec<JoinHandle<anyhow::Res
 
     reminders
         .into_iter()
-        .map(|reminder| tokio::spawn(async { run_reminder(reminder).await }))
+        .map(|reminder| (tokio::spawn(run_reminder(reminder.clone())), reminder))
         .collect()
 }
 
@@ -166,33 +160,35 @@ fn collect_and_run_tasks(reminders: Vec<Reminder>) -> Vec<JoinHandle<anyhow::Res
 /// The watcher must be configured outside of this function to watch a file.
 /// The receiver will receive a message anytime the target file is modified.
 ///
-fn gen_watcher_receiver() -> anyhow::Result<(INotifyWatcher, Receiver<Event>)> {
-    // buffer capacity of 1 should usually be enough
+fn gen_watcher_receiver() -> anyhow::Result<(
+    Debouncer<INotifyWatcher, FileIdMap>,
+    Receiver<DebouncedEvent>,
+)> {
     let (tx, receiver) = channel(1);
-    let watcher = RecommendedWatcher::new(
-        move |result: Result<Event, notify::Error>| {
-            // how can this error?
-            match result {
-                // we only want to send messages if the target was modified
-                // this syntax is magical
-                Ok(
-                    event @ notify::Event {
-                        kind: EventKind::Modify(_),
-                        ..
-                    },
-                ) => {
-                    println!("a file was modified, sending a message...");
-
-                    tx.blocking_send(event).unwrap();
+    let debouncer = new_debouncer(
+        Duration::from_secs(1),
+        None,
+        move |result: Result<Vec<DebouncedEvent>, _>| match result {
+            Ok(e) => {
+                for t in e {
+                    match t.kind {
+                        EventKind::Modify(_) => {
+                            println!("Modification occurred");
+                            tx.blocking_send(t).unwrap();
+                        }
+                        _ => {
+                            println!("Something happened that I don't care about")
+                        }
+                    }
                 }
-                Ok(_) => {} //println!("another operation occurred, ignoring..."),
-                Err(e) => println!("there was an error watching the file: {e}"),
+            }
+            Err(e) => {
+                println!("there was an error reading debounced changes: {e:?}")
             }
         },
-        Config::default(),
     )?;
 
-    Ok((watcher, receiver))
+    Ok((debouncer, receiver))
 }
 /// Sends a desktop notification on the interval specified by `reminder`
 async fn run_reminder(reminder: Reminder) -> anyhow::Result<()> {
