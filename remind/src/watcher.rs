@@ -64,10 +64,38 @@ mod tests {
         thread::spawn(move || {
             sleep(Duration::from_secs(1));
             test_file.write_all(b"hello, world!").unwrap();
+            // as a note: this also passes. cool
+
+            // sleep(Duration::from_secs(1));
+            // assert!(was_written);
         });
         // wait until a message is sent
         let _ = rx.blocking_recv().unwrap();
         was_written = true;
         assert!(was_written);
+    }
+    #[test]
+    fn test_debouncing() {
+        let path_str = "debounce.txt";
+        let mut test_file = File::create(path_str).unwrap();
+        let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
+        debouncer
+            .watcher()
+            .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+            .unwrap();
+        let mut watches = 0;
+
+        thread::spawn(move || {
+            for _ in 0..5 {
+                sleep(Duration::from_millis(100));
+                test_file.write_all(b"hello, world!\n").unwrap();
+            }
+        });
+        thread::spawn(move || loop {
+            let _ = rx.blocking_recv().unwrap();
+            watches += 1;
+        });
+        sleep(Duration::from_secs(2));
+        assert_eq!(watches, 1);
     }
 }
