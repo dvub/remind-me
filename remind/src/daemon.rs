@@ -48,8 +48,8 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
         // we just need to wait for a change to happen
         let _ = rx.recv().await.unwrap();
         // now that we know there's been a change, restart tasks
-        let new_reminders = collect_reminders_from_file(file)?;
 
+        let new_reminders = collect_reminders_from_file(file)?;
         let mut hasher = DefaultHasher::new();
         let to_abort: Vec<_> = reminders
             .iter()
@@ -72,10 +72,6 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
             .filter(|x| !reminders.contains(*x))
             .cloned()
             .collect();
-
-        println!();
-        println!("starting the following tasks: {:?}", to_start);
-        println!();
         //
         tasks = collect_and_run_tasks(to_start);
         reminders = new_reminders;

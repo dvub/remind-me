@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
+use sysinfo::{System, IS_SUPPORTED_SYSTEM};
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -31,6 +32,15 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
     }
     let res: AllReminders = toml::from_str(&toml_str)?;
     let reminders = res.reminders;
+
     println!("successfully read file into memory...");
     Ok(reminders)
+}
+
+pub fn is_daemon_running(process_name: &str) -> bool {
+    let system = System::new_all();
+    !system
+        .processes_by_name(process_name)
+        .collect::<Vec<_>>()
+        .is_empty()
 }

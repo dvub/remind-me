@@ -4,11 +4,14 @@ mod watcher;
 
 use std::env;
 
-use daemon::{configure_daemon, run, setup_config};
+use daemon::{configure_daemon, run, setup_config, start_daemon};
+
+// TODO: fix error propagation/handling in general
+// its a shitshow right now
 fn main() -> anyhow::Result<()> {
     let file = setup_config()?;
-    let _daemon = configure_daemon(&env::current_dir()?)?;
-    //start_daemon(daemon, &file)?;
-    run(&file)?;
+    let daemon = configure_daemon(&env::current_dir()?)?;
+    start_daemon(daemon, &file)?;
+    // run(&file)?;
     Ok(())
 }
