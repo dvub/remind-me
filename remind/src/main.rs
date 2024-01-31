@@ -112,12 +112,13 @@ async fn run(file: &Path) -> anyhow::Result<()> {
         println!("stopping the following tasks: {:?}", to_abort);
         println!();
 
-        for task in &tasks {
-            for t in &to_abort {
-                if task.1 == **t {
-                    task.0.abort();
-                    println!("aborting a task");
-                }
+        for (handle, task_info) in &tasks {
+            if to_abort
+                .iter()
+                .any(|abort_task_info| task_info == *abort_task_info)
+            {
+                handle.abort();
+                println!("aborted a task");
             }
         }
 
