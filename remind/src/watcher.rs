@@ -41,3 +41,22 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
 
     Ok((debouncer, receiver))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::File, path::Path};
+
+    use notify::Watcher;
+
+    #[test]
+    fn test_watcher() {
+        let path_str = "test.txt";
+        // create the file or rewrite it, doesn't really matter
+        let file = File::create(path_str).unwrap();
+        let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
+        debouncer
+            .watcher()
+            .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+            .unwrap();
+    }
+}

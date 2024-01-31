@@ -44,3 +44,36 @@ pub fn is_daemon_running(process_name: &str) -> bool {
         .collect::<Vec<_>>()
         .is_empty()
 }
+
+// #[cfg(test)]
+mod tests {
+    use super::Reminder;
+    use std::{env, os::unix::process::CommandExt, process::Command};
+
+    impl Reminder {
+        fn new(name: String, description: String, frequency: i32, icon: Option<String>) -> Self {
+            Reminder {
+                name,
+                description,
+                frequency,
+                icon,
+            }
+        }
+    }
+
+    #[test]
+    fn read_from_file() {
+        let dir = env::current_dir().unwrap();
+        let res = super::collect_reminders_from_file(&dir.join("Test.toml")).unwrap();
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].name, "Hello, world!");
+    }
+
+    #[test]
+    fn is_daemon_running() {
+        let process = "htop";
+        let mut handle = Command::new(process).spawn().unwrap();
+        assert!(super::is_daemon_running(process));
+        handle.kill().unwrap();
+    }
+}
