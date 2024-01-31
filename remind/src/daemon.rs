@@ -1,11 +1,18 @@
 use core::collect_reminders_from_file;
 use daemonize::Daemonize;
 use notify::{RecursiveMode, Watcher};
-use std::fs::File;
-use std::path::Path;
+use std::collections::hash_map::DefaultHasher;
+use std::env;
+use std::fs::{create_dir, File};
+use std::hash::{Hash, Hasher};
+use std::path::{Path, PathBuf};
 
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
+
+// thank you kyillingene
+// for helping me learn about async rust programming
+// this would have taken hours without help
 
 /// Takes a `Daemonize` and a target config file. Runs the program as a daemon
 /// reading reminders from the target config file.
@@ -42,22 +49,20 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
         let _ = rx.recv().await.unwrap();
         // now that we know there's been a change, restart tasks
         let new_reminders = collect_reminders_from_file(file)?;
+
+        let mut hasher = DefaultHasher::new();
         let to_abort: Vec<_> = reminders
             .iter()
-            .filter(|x| !new_reminders.contains(x))
+            .map(|reminder| {
+                reminder.hash(&mut hasher);
+                hasher.finish()
+            })
             .collect();
 
-        println!();
-        println!("stopping the following tasks: {:?}", to_abort);
-        println!();
-
-        for (handle, task_info) in &tasks {
-            if to_abort
-                .iter()
-                .any(|abort_task_info| task_info == *abort_task_info)
-            {
+        for (handle, hash) in &tasks {
+            if to_abort.binary_search(hash).is_ok() {
                 handle.abort();
-                println!("aborted a task");
+                println!("aborted a task: {hash}");
             }
         }
 
@@ -88,4 +93,31 @@ pub fn configure_daemon(current_dir: &Path) -> anyhow::Result<Daemonize<()>> {
         .pid_file(current_dir.join("daemon.pid"))
         .working_directory(current_dir);
     Ok(daemonize)
+}
+/// Uses the directory from `env::current_dir()`
+/// to check for (or create) a configuration directory
+/// which contains the toml file to read from.
+/// This function returns a path to the toml file
+pub fn setup_config() -> anyhow::Result<PathBuf> {
+    println!();
+    println!("initializing remind-me daemon...");
+    println!();
+    let config_dir_name = "config";
+    let config_file_name = "Config.toml";
+    // TODO:
+    // should this be current_exe?
+    let current_dir = env::current_dir()?;
+    println!("current dir: {current_dir:?}");
+    let config_dir = current_dir.join(config_dir_name);
+
+    let file = config_dir.join(config_file_name);
+
+    if !config_dir.exists() {
+        println!("config directory does not exist, creating dir and config file");
+        create_dir(&config_dir)?;
+        File::create(&file)?;
+    } else {
+        println!("found an existing config directory.");
+    }
+    Ok(file)
 }
