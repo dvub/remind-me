@@ -16,29 +16,21 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     Receiver<DebouncedEvent>,
 )> {
     let (tx, receiver) = channel(1);
-    let debouncer = new_debouncer(
-        Duration::from_secs(1),
-        None,
-        move |result: Result<Vec<DebouncedEvent>, _>| match result {
-            Ok(e) => {
-                for t in e {
-                    match t.kind {
-                        EventKind::Modify(_) => {
-                            println!("Modification occurred");
-                            tx.blocking_send(t).unwrap();
-                        }
-                        _ => {
-                            println!("Something happened that I don't care about")
-                        }
-                    }
+    let handler_closure = move |result: Result<Vec<DebouncedEvent>, _>| match result {
+        Ok(debounced_events) => {
+            for event in debounced_events {
+                if let EventKind::Modify(_) = event.kind {
+                    tx.blocking_send(event).unwrap();
                 }
             }
-            Err(e) => {
-                println!("there was an error reading debounced changes: {e:?}")
-            }
-        },
-    )?;
-
+        }
+        Err(e) => {
+            println!("there was an error reading debounced changes: {e:?}")
+        }
+    };
+    // note that the debouncer must be returned
+    // so that it's not dropped (and stops sending to the receiver)
+    let debouncer = new_debouncer(Duration::from_secs(1), None, handler_closure)?;
     Ok((debouncer, receiver))
 }
 
@@ -55,10 +47,8 @@ mod tests {
     use notify::Watcher;
 
     #[test]
+    #[allow(unused_assignments)]
     fn test_watcher() {
-        println!();
-        println!("testing file watcher...");
-        println!();
         let path_str = "test.txt";
         // create the file or rewrite it, doesn't really matter
         let mut test_file = File::create(path_str).unwrap();
@@ -69,10 +59,13 @@ mod tests {
             .unwrap();
 
         let mut was_written = false;
+        // in an alternate, simultaneous thread,
+        // write to the file to trigger the watcher
         thread::spawn(move || {
             sleep(Duration::from_secs(1));
             test_file.write_all(b"hello, world!").unwrap();
         });
+        // wait until a message is sent
         let _ = rx.blocking_recv().unwrap();
         was_written = true;
         assert!(was_written);
