@@ -44,19 +44,37 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, path::Path};
+    use std::{
+        fs::File,
+        io::Write,
+        path::Path,
+        thread::{self, sleep},
+        time::Duration,
+    };
 
     use notify::Watcher;
 
     #[test]
     fn test_watcher() {
+        println!();
+        println!("testing file watcher...");
+        println!();
         let path_str = "test.txt";
         // create the file or rewrite it, doesn't really matter
-        let file = File::create(path_str).unwrap();
+        let mut test_file = File::create(path_str).unwrap();
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
             .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
             .unwrap();
+
+        let mut was_written = false;
+        thread::spawn(move || {
+            sleep(Duration::from_secs(1));
+            test_file.write_all(b"hello, world!").unwrap();
+        });
+        let _ = rx.blocking_recv().unwrap();
+        was_written = true;
+        assert!(was_written);
     }
 }
