@@ -41,7 +41,8 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     )?;
     Ok((debouncer, receiver))
 }
-
+// TODO: reduce repetition
+// implement tempfile crate
 #[cfg(test)]
 mod tests {
     use notify::Watcher;
