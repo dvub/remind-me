@@ -47,19 +47,9 @@ pub fn is_daemon_running(process_name: &str) -> bool {
 
 // #[cfg(test)]
 mod tests {
-    use super::Reminder;
-    use std::{env, os::unix::process::CommandExt, process::Command};
+    use std::{env, process::Command};
 
-    impl Reminder {
-        fn new(name: String, description: String, frequency: i32, icon: Option<String>) -> Self {
-            Reminder {
-                name,
-                description,
-                frequency,
-                icon,
-            }
-        }
-    }
+    use super::Reminder;
 
     #[test]
     fn read_from_file() {
