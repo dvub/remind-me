@@ -101,7 +101,7 @@ mod tests {
             .watcher()
             .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
             .unwrap();
-        let times_written = Arc::new(Mutex::new(0));
+        let mut times_written = 0;
         // 3 * 100ms should run within one tick/frame of our debouncer,
         // thus our debouncer SHOULD only notice 1 change.
         let write_thread_handle = thread::spawn(move || {
@@ -115,16 +115,12 @@ mod tests {
         });
 
         // we need to detect changes here while the other thread is writing file changes
-        let clone = Arc::clone(&times_written);
-        while !write_thread_handle.is_finished() {
-            if rx.blocking_recv().is_some() {
-                let mut inner = clone.lock().unwrap();
-                *inner += 1;
-            }
+        while rx.blocking_recv().is_some() {
+            times_written += 1;
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
-        assert_eq!(*times_written.lock().unwrap(), 1);
+        assert_eq!(times_written, 1);
     }
     #[test]
     fn detect_multiple_changes() {
