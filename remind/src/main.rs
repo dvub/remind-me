@@ -4,7 +4,7 @@ mod watcher;
 
 use std::env;
 
-use daemon::{configure_daemon, run, setup_config, start_daemon};
+use daemon::{configure_daemon, setup_config, start_daemon};
 
 // TODO: fix error propagation/handling in general
 // its a shitshow right now

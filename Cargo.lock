@@ -676,6 +676,7 @@ dependencies = [
  "notify-rust",
  "serde",
  "sysinfo",
+ "tempfile",
  "tokio",
  "toml 0.8.8",
 ]

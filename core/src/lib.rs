@@ -45,18 +45,27 @@ pub fn is_daemon_running(process_name: &str) -> bool {
         .is_empty()
 }
 
-// #[cfg(test)]
+// why test no work :(
 mod tests {
-    use std::{env, process::Command};
+    use std::{fs::File, io::Write, process::Command};
 
-    use super::Reminder;
-
+    use tempfile::tempdir;
     #[test]
     fn read_from_file() {
-        let dir = env::current_dir().unwrap();
-        let res = super::collect_reminders_from_file(&dir.join("Test.toml")).unwrap();
+        let one_reminder = b"[[reminders]]
+        name = \"Hello, world!\"
+        description = \"...\"
+        frequency = 0
+        ";
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("Test.toml");
+        let mut test_file = File::create(&path).unwrap();
+        test_file.write_all(one_reminder).unwrap();
+        let res = super::collect_reminders_from_file(&path).unwrap();
         assert_eq!(res.len(), 1);
         assert_eq!(res[0].name, "Hello, world!");
+        drop(test_file);
+        temp_dir.close().unwrap();
     }
 
     #[test]
