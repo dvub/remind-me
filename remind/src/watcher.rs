@@ -41,61 +41,22 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     )?;
     Ok((debouncer, receiver))
 }
-// TODO: reduce repetition
 #[cfg(test)]
 mod tests {
     use notify::Watcher;
     use std::{
         fs::File,
-        io::Write,
+        io::{self, Write},
         path::Path,
-        sync::{Arc, Mutex},
-        thread::{self, sleep, JoinHandle},
+        thread::{self, sleep},
         time::Duration,
     };
     use tempfile::tempdir;
-    use tokio::time::timeout;
 
-    // TODO:
-    // mark with #[tokio::test]
-    // at the time of me writing this, #[tokio::test] was not compiling for whatever reason
-    // so i just built a runtime and blocked on it
-    #[test]
-    fn test_watcher() {
-        tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let temp_dir = tempdir().unwrap();
-                let path = temp_dir.path().join("test.txt");
-                let mut test_file = File::create(&path).unwrap();
-                // println!("{:?}", test_file.path().display());
-                let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
-                debouncer
-                    .watcher()
-                    .watch(&path, notify::RecursiveMode::NonRecursive)
-                    .unwrap();
-                // in an alternate, simultaneous thread,
-                // write to the file to trigger the watcher
-                thread::spawn(move || {
-                    sleep(Duration::from_millis(100));
-                    test_file.write_all(b"hello, world!").unwrap();
-                    println!("successfully wrote");
-                    drop(test_file);
-                });
-                // TODO:
-                // find the correct/optimal time to wait.
-                if (timeout(Duration::from_secs(5), rx.recv()).await).is_err() {
-                    panic!("Receiver timed out, failing test...");
-                }
-
-                temp_dir.close().unwrap();
-            });
-    }
-
-    #[test]
-    fn detect_single_change() {
+    fn count_changes<F>(write_logic: F) -> i32
+    where
+        F: Fn(&mut File) -> io::Result<()> + Send + 'static,
+    {
         // set up the file
         let temp_dir = tempdir().unwrap();
         let path = temp_dir.path().join("test.txt");
@@ -107,13 +68,10 @@ mod tests {
             .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
             .unwrap();
         let mut times_written = 0;
+
         let write_thread_handle = thread::spawn(move || {
-            for _ in 0..3 {
-                test_file.write_all(b"hello, world!\n").unwrap();
-                sleep(Duration::from_millis(100));
-            }
-            // TODO: fix this extra delay FFS!
-            sleep(Duration::from_secs(2));
+            write_logic(&mut test_file).unwrap();
+            drop(test_file);
             debouncer.stop();
         });
         // we need to detect changes here while the other thread is writing file changes
@@ -123,68 +81,46 @@ mod tests {
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
         temp_dir.close().unwrap();
-        assert_eq!(times_written, 1);
+        times_written
+    }
+    #[test]
+    fn detect_single_change() {
+        let changes = count_changes(|file| {
+            for _ in 0..3 {
+                file.write_all(b"hello, world!\n")?;
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            sleep(Duration::from_secs(2));
+            Ok(())
+        });
+        assert_eq!(changes, 1);
     }
 
     #[test]
     fn detect_multiple_changes() {
-        // set up the file
-        let temp_dir = tempdir().unwrap();
-        let path = temp_dir.path().join("test.txt");
-        let mut test_file = File::create(&path).unwrap();
-        // create our watcher
-        let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
-        debouncer
-            .watcher()
-            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
-            .unwrap();
-        let mut times_written = 0;
-        let write_thread_handle = thread::spawn(move || {
-            for _ in 0..3 {
-                test_file.write_all(b"hello, world!\n").unwrap();
-                sleep(Duration::from_secs(2));
+        let expected_num_changes = 3;
+        let changes = count_changes(move |file| {
+            for _ in 0..expected_num_changes {
+                file.write_all(b"hello, world!\n")?;
+                std::thread::sleep(Duration::from_secs(2));
             }
-            debouncer.stop();
+            Ok(())
         });
-        // we need to detect changes here while the other thread is writing file changes
-        while rx.blocking_recv().is_some() {
-            times_written += 1;
-        }
-        // wait for the writing thread to finish
-        write_thread_handle.join().unwrap();
-        temp_dir.close().unwrap();
-        assert_eq!(times_written, 3);
+        assert_eq!(changes, expected_num_changes);
     }
 
     #[test]
     fn ignore_extra_changes() {
-        // set up the file
-        let temp_dir = tempdir().unwrap();
-        let path = temp_dir.path().join("test.txt");
-        let mut test_file = File::create(&path).unwrap();
-        // create our watcher
-        let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
-        debouncer
-            .watcher()
-            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
-            .unwrap();
-        let mut times_written = 0;
-        let write_thread_handle = thread::spawn(move || {
-            for _ in 0..3 {
+        let outer_iter_count = 3;
+        let changes = count_changes(move |file| {
+            for _ in 0..outer_iter_count {
                 for _ in 0..3 {
-                    test_file.write_all(b"hello, world\n").unwrap();
+                    file.write_all(b"hello, world\n").unwrap();
                 }
                 sleep(Duration::from_secs(2));
             }
-            debouncer.stop();
+            Ok(())
         });
-        // we need to detect changes here while the other thread is writing file changes
-        while rx.blocking_recv().is_some() {
-            times_written += 1;
-        }
-        // wait for the writing thread to finish
-        write_thread_handle.join().unwrap();
-        temp_dir.close().unwrap();
-        assert_eq!(times_written, 3);
+        assert_eq!(changes, outer_iter_count);
     }
 }
