@@ -42,7 +42,6 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     Ok((debouncer, receiver))
 }
 // TODO: reduce repetition
-// implement tempfile crate
 #[cfg(test)]
 mod tests {
     use notify::Watcher;
@@ -51,9 +50,10 @@ mod tests {
         io::Write,
         path::Path,
         sync::{Arc, Mutex},
-        thread::{self, sleep},
+        thread::{self, sleep, JoinHandle},
         time::Duration,
     };
+    use tempfile::tempdir;
     use tokio::time::timeout;
 
     // TODO:
@@ -67,76 +67,78 @@ mod tests {
             .build()
             .unwrap()
             .block_on(async {
-                let path_str = "test.txt";
-                // create the file or rewrite it, doesn't really matter
-                let mut test_file = File::create(path_str).unwrap();
+                let temp_dir = tempdir().unwrap();
+                let path = temp_dir.path().join("test.txt");
+                let mut test_file = File::create(&path).unwrap();
+                // println!("{:?}", test_file.path().display());
                 let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
                 debouncer
                     .watcher()
-                    .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+                    .watch(&path, notify::RecursiveMode::NonRecursive)
                     .unwrap();
                 // in an alternate, simultaneous thread,
                 // write to the file to trigger the watcher
                 thread::spawn(move || {
                     sleep(Duration::from_millis(100));
                     test_file.write_all(b"hello, world!").unwrap();
+                    println!("successfully wrote");
+                    drop(test_file);
                 });
-                // wait until a message is sent
-
                 // TODO:
                 // find the correct/optimal time to wait.
                 if (timeout(Duration::from_secs(5), rx.recv()).await).is_err() {
                     panic!("Receiver timed out, failing test...");
                 }
+
+                temp_dir.close().unwrap();
             });
     }
+
     #[test]
     fn detect_single_change() {
         // set up the file
-        let path_str = "debounce.txt";
-        let mut test_file = File::create(path_str).unwrap();
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("test.txt");
+        let mut test_file = File::create(&path).unwrap();
         // create our watcher
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
-            .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
             .unwrap();
         let mut times_written = 0;
-        // 3 * 100ms should run within one tick/frame of our debouncer,
-        // thus our debouncer SHOULD only notice 1 change.
         let write_thread_handle = thread::spawn(move || {
             for _ in 0..3 {
-                sleep(Duration::from_millis(100));
                 test_file.write_all(b"hello, world!\n").unwrap();
+                sleep(Duration::from_millis(100));
             }
-            // TODO: fix this
+            // TODO: fix this extra delay FFS!
             sleep(Duration::from_secs(2));
             debouncer.stop();
         });
-
         // we need to detect changes here while the other thread is writing file changes
         while rx.blocking_recv().is_some() {
             times_written += 1;
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
+        temp_dir.close().unwrap();
         assert_eq!(times_written, 1);
     }
+
     #[test]
     fn detect_multiple_changes() {
         // set up the file
-        let path_str = "multi.txt";
-        let mut test_file = File::create(path_str).unwrap();
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("test.txt");
+        let mut test_file = File::create(&path).unwrap();
         // create our watcher
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
-            .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
             .unwrap();
-        let times_written = Arc::new(Mutex::new(0));
-
-        // the watcher detects the first change that happened within 500ms,
-        // then waits 1 second before sending it.
+        let mut times_written = 0;
         let write_thread_handle = thread::spawn(move || {
             for _ in 0..3 {
                 test_file.write_all(b"hello, world!\n").unwrap();
@@ -144,34 +146,29 @@ mod tests {
             }
             debouncer.stop();
         });
-
-        // we need to detect changes here wile the other thread is writing file changes
-        let clone = Arc::clone(&times_written);
-        while !write_thread_handle.is_finished() {
-            if rx.blocking_recv().is_some() {
-                let mut inner = clone.lock().unwrap();
-                *inner += 1;
-            }
+        // we need to detect changes here while the other thread is writing file changes
+        while rx.blocking_recv().is_some() {
+            times_written += 1;
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
-        assert_eq!(*times_written.lock().unwrap(), 3);
+        temp_dir.close().unwrap();
+        assert_eq!(times_written, 3);
     }
+
     #[test]
     fn ignore_extra_changes() {
         // set up the file
-        let path_str = "ignore_extra.txt";
-        let mut test_file = File::create(path_str).unwrap();
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("test.txt");
+        let mut test_file = File::create(&path).unwrap();
         // create our watcher
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
-            .watch(Path::new(path_str), notify::RecursiveMode::NonRecursive)
+            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
             .unwrap();
-        let times_written = Arc::new(Mutex::new(0));
-
-        // the watcher detects the first change that happened within 500ms,
-        // then waits 1 second before sending it.
+        let mut times_written = 0;
         let write_thread_handle = thread::spawn(move || {
             for _ in 0..3 {
                 for _ in 0..3 {
@@ -181,17 +178,13 @@ mod tests {
             }
             debouncer.stop();
         });
-
-        // we need to detect changes here wile the other thread is writing file changes
-        let clone = Arc::clone(&times_written);
-        while !write_thread_handle.is_finished() {
-            if rx.blocking_recv().is_some() {
-                let mut inner = clone.lock().unwrap();
-                *inner += 1;
-            }
+        // we need to detect changes here while the other thread is writing file changes
+        while rx.blocking_recv().is_some() {
+            times_written += 1;
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
-        assert_eq!(*times_written.lock().unwrap(), 3);
+        temp_dir.close().unwrap();
+        assert_eq!(times_written, 3);
     }
 }

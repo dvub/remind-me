@@ -2891,6 +2891,7 @@ dependencies = [
  "notify-debouncer-full",
  "notify-rust",
  "serde",
+ "tempfile",
  "tokio",
  "toml 0.8.8",
 ]
