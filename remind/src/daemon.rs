@@ -132,9 +132,4 @@ mod tests {
         assert!(path.exists());
         dir.close().unwrap();
     }
-    #[test]
-    fn test_logic() {
-        todo!();
-        // super::run()
-    }
 }

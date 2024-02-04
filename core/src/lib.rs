@@ -4,7 +4,7 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
-use sysinfo::{System, IS_SUPPORTED_SYSTEM};
+use sysinfo::System;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -46,12 +46,13 @@ pub fn is_daemon_running(process_name: &str) -> bool {
 }
 
 // why test no work :(
+// #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Write, process::Command};
-
-    use tempfile::tempdir;
     #[test]
     fn read_from_file() {
+        use std::{fs::File, io::Write};
+        use tempfile::tempdir;
+
         let one_reminder = b"[[reminders]]
         name = \"Hello, world!\"
         description = \"...\"
@@ -70,6 +71,8 @@ mod tests {
 
     #[test]
     fn is_daemon_running() {
+        use std::process::Command;
+
         let process = "htop";
         let mut handle = Command::new(process).spawn().unwrap();
         assert!(super::is_daemon_running(process));

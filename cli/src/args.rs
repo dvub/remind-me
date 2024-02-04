@@ -1,12 +1,27 @@
-use clap::Parser;
-#[derive(Parser, Debug)]
+use clap::{Parser, Subcommand};
+
+// TODO:
+// adequately document this shit lol
+
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// Name of the person to greet
-    #[arg(short, long)]
-    pub name: String,
-
-    /// Number of times to greet
-    #[arg(short, long, default_value_t = 1)]
-    pub count: u8,
+    #[command(subcommand)]
+    pub command: Commands,
+}
+#[derive(Subcommand)]
+pub enum Commands {
+    Control {
+        #[command(subcommand)]
+        action: ControlCommands,
+    },
+}
+#[derive(Subcommand)]
+pub enum ControlCommands {
+    IsRunning,
+    Start {
+        #[arg(short, long)]
+        force: bool,
+    },
+    Stop,
 }
