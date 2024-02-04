@@ -2,10 +2,9 @@ use core::collect_reminders_from_file;
 use daemonize::Daemonize;
 use notify::{RecursiveMode, Watcher};
 use std::collections::hash_map::DefaultHasher;
-use std::env;
-use std::fs::{create_dir, File};
+use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
@@ -95,26 +94,42 @@ pub fn configure_daemon(current_dir: &Path) -> anyhow::Result<Daemonize<()>> {
 /// to check for (or create) a configuration directory
 /// which contains the toml file to read from.
 /// This function returns a path to the toml file
-pub fn setup_config() -> anyhow::Result<PathBuf> {
+pub fn setup_file(file: &Path) -> anyhow::Result<()> {
     println!();
     println!("initializing remind-me daemon...");
     println!();
-    let config_dir_name = "config";
-    let config_file_name = "Config.toml";
-    // TODO:
-    // should this be current_exe?
-    let current_dir = env::current_dir()?;
-    println!("current dir: {current_dir:?}");
-    let config_dir = current_dir.join(config_dir_name);
+    /*
+        let config_dir_name = "config";
+        let config_file_name = "Config.toml";
+        // TODO:
+        // should this be current_exe?
+        let current_dir = env::current_dir()?;
+        println!("current dir: {current_dir:?}");
+        let config_dir = current_dir.join(config_dir_name);
 
-    let file = config_dir.join(config_file_name);
-
-    if !config_dir.exists() {
-        println!("config directory does not exist, creating dir and config file");
-        create_dir(&config_dir)?;
-        File::create(&file)?;
+        let file = config_dir.join(config_file_name);
+    */
+    if !file.exists() {
+        println!("config file does not exist, creating...");
+        File::create(file)?;
     } else {
-        println!("found an existing config directory.");
+        println!("found an existing config file");
     }
-    Ok(file)
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+    #[test]
+    fn test_setup_without_file() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("Test.toml");
+        assert!(!path.exists());
+
+        //
+        super::setup_file(&path).unwrap();
+        assert!(path.exists());
+        dir.close().unwrap();
+    }
 }
