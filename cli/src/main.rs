@@ -1,10 +1,9 @@
 use clap::Parser;
-use core::is_daemon_running;
-
+use core::daemon::{is_daemon_running, start_daemon};
 mod args;
 
 use args::{Args, Commands, ControlCommands};
-fn main() {
+fn main() -> anyhow::Result<()> {
     println!();
     println!("remind-me CLI - dvub");
     println!();
@@ -17,7 +16,7 @@ fn main() {
                 // TODO:
                 // fix the process name
                 // i.e. determine that dynamically
-                let is_running = is_daemon_running("remind");
+                let is_running = is_daemon_running();
                 match is_running {
                     true => {
                         println!("The daemon is running.");
@@ -31,18 +30,27 @@ fn main() {
                 // TODO:
                 // fix the process name
                 // i.e. determine that dynamically
-                let is_running = is_daemon_running("remind");
+                let is_running = is_daemon_running();
                 match is_running {
                     true => {
                         println!("the daemon is running");
                         if force {
                             println!("force option is enabled, starting another instance...");
+                            start_daemon()?;
+                        } else {
+                            println!("exiting...")
                         }
                     }
-                    false => println!("The daemon is not running."),
+                    false => {
+                        println!("The daemon is not running, starting...");
+                        start_daemon()?;
+                    }
                 }
             }
             ControlCommands::Stop => todo!(),
         },
+        Commands::Auth { action: _ } => todo!(),
+        Commands::Reminders { action: _ } => todo!(),
     }
+    Ok(())
 }

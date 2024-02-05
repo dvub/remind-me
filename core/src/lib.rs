@@ -1,10 +1,14 @@
+pub mod daemon;
+mod task;
+mod watcher;
+// TODO: fix error propagation/handling in general
+// its a shitshow right now
 // TODO: more documentation
 // TODO: testing
 
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
-use sysinfo::System;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -37,14 +41,6 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
     Ok(reminders)
 }
 
-pub fn is_daemon_running(process_name: &str) -> bool {
-    let system = System::new_all();
-    !system
-        .processes_by_name(process_name)
-        .collect::<Vec<_>>()
-        .is_empty()
-}
-
 // why test no work :(
 // #[cfg(test)]
 mod tests {
@@ -67,15 +63,5 @@ mod tests {
         assert_eq!(res[0].name, "Hello, world!");
         drop(test_file);
         temp_dir.close().unwrap();
-    }
-
-    #[test]
-    fn is_daemon_running() {
-        use std::process::Command;
-
-        let process = "htop";
-        let mut handle = Command::new(process).spawn().unwrap();
-        assert!(super::is_daemon_running(process));
-        handle.kill().unwrap();
     }
 }

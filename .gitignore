@@ -1,4 +1,5 @@
 /target
 # dont push config files
-/config
+Config.toml
 daemon.pid
+remind.pid

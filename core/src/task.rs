@@ -1,5 +1,3 @@
-use core::Reminder;
-
 use notify_rust::Notification;
 use std::{
     collections::hash_map::DefaultHasher,
@@ -7,6 +5,8 @@ use std::{
     time::Duration,
 };
 use tokio::{task::JoinHandle, time::sleep};
+
+use crate::Reminder;
 
 pub fn collect_and_run_tasks(
     reminders: Vec<Reminder>,

@@ -1,11 +1,13 @@
-use core::collect_reminders_from_file;
 use daemonize::Daemonize;
 use notify::{RecursiveMode, Watcher};
 use std::collections::hash_map::DefaultHasher;
+use std::env;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
+use sysinfo::System;
 
+use crate::collect_reminders_from_file;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 
@@ -15,14 +17,17 @@ use crate::watcher::gen_watcher_receiver;
 
 /// Takes a `Daemonize` and a target config file. Runs the program as a daemon
 /// reading reminders from the target config file.
-pub fn start_daemon(daemon: Daemonize<()>, config_file: &Path) -> anyhow::Result<()> {
+pub fn start_daemon() -> anyhow::Result<()> {
+    let path = env::current_dir()?.join("Config.toml");
+    setup_file(&path)?;
+    let daemon = configure_daemon(&env::current_dir()?)?;
     match daemon.start() {
         Ok(_) => {
             println!("successfully started daemon. reminders are now running in the background.");
         }
         Err(e) => eprintln!("there was an error starting the daemon: {e}"),
     }
-    run(config_file)?;
+    run(&path)?;
     Ok(())
 }
 
@@ -86,7 +91,7 @@ pub fn configure_daemon(current_dir: &Path) -> anyhow::Result<Daemonize<()>> {
     let daemonize = Daemonize::new()
         .stdout(stdout)
         .stderr(stderr)
-        .pid_file(current_dir.join("daemon.pid"))
+        .pid_file(current_dir.join("remind.pid"))
         .working_directory(current_dir);
     Ok(daemonize)
 }
@@ -118,11 +123,21 @@ pub fn setup_file(file: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
+pub fn is_daemon_running() -> bool {
+    let system = System::new_all();
+    !system
+        .processes_by_name("remind")
+        .collect::<Vec<_>>()
+        .is_empty()
+}
+
+// #[cfg(test)]
 mod tests {
-    use tempfile::tempdir;
+
     #[test]
     fn test_setup_without_file() {
+        use tempfile::tempdir;
+
         let dir = tempdir().unwrap();
         let path = dir.path().join("Test.toml");
         assert!(!path.exists());
@@ -131,5 +146,9 @@ mod tests {
         super::setup_file(&path).unwrap();
         assert!(path.exists());
         dir.close().unwrap();
+    }
+    #[test]
+    fn is_daemon_running() {
+        assert!(super::is_daemon_running());
     }
 }

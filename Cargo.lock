@@ -594,9 +594,9 @@ checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 name = "cli"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "core",
- "remind",
 ]
 
 [[package]]
@@ -674,6 +674,7 @@ dependencies = [
  "daemonize",
  "futures",
  "notify",
+ "notify-debouncer-full",
  "notify-rust",
  "serde",
  "sysinfo",
@@ -2880,23 +2881,6 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
-
-[[package]]
-name = "remind"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "core",
- "daemonize",
- "futures",
- "notify",
- "notify-debouncer-full",
- "notify-rust",
- "serde",
- "tempfile",
- "tokio",
- "toml 0.8.8",
-]
 
 [[package]]
 name = "rustc-demangle"

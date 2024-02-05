@@ -41,7 +41,7 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     )?;
     Ok((debouncer, receiver))
 }
-#[cfg(test)]
+// #[cfg(test)]
 mod tests {
     use notify::Watcher;
     use std::{

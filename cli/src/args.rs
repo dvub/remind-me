@@ -15,7 +15,29 @@ pub enum Commands {
         #[command(subcommand)]
         action: ControlCommands,
     },
+    Reminders {
+        #[command(subcommand)]
+        action: RemindersCommands,
+    },
+    Auth {
+        #[command(subcommand)]
+        action: AuthCommands,
+    },
 }
+#[derive(Subcommand)]
+pub enum AuthCommands {
+    Status,
+    Login,
+    Logout,
+}
+
+#[derive(Subcommand)]
+pub enum RemindersCommands {
+    Add,
+    Update,
+    Delete,
+}
+
 #[derive(Subcommand)]
 pub enum ControlCommands {
     IsRunning,
