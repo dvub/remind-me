@@ -149,6 +149,7 @@ mod tests {
     }
     #[test]
     fn is_daemon_running() {
+        super::start_daemon().unwrap();
         assert!(super::is_daemon_running());
     }
 }
