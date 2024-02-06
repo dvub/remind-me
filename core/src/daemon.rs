@@ -1,34 +1,63 @@
-use daemonize::Daemonize;
-use notify::{RecursiveMode, Watcher};
-use std::collections::hash_map::DefaultHasher;
-use std::env;
-use std::fs::File;
-use std::hash::{Hash, Hasher};
-use std::path::Path;
-use sysinfo::System;
-
 use crate::collect_reminders_from_file;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
+use daemonize::Daemonize;
+use notify::{RecursiveMode, Watcher};
+use std::collections::hash_map::DefaultHasher;
 
+use std::fs::File;
+use std::hash::{Hash, Hasher};
+use std::path::{Path, PathBuf};
 // thank you kyillingene
 // for helping me learn about async rust programming
 // this would have taken hours without help
 
-/// Takes a `Daemonize` and a target config file. Runs the program as a daemon
-/// reading reminders from the target config file.
-pub fn start_daemon() -> anyhow::Result<()> {
-    let path = env::current_dir()?.join("Config.toml");
-    setup_file(&path)?;
-    let daemon = configure_daemon(&env::current_dir()?)?;
-    match daemon.start() {
-        Ok(_) => {
-            println!("successfully started daemon. reminders are now running in the background.");
+// TODO:
+// testing
+// unify project dir instead of calling it in individual files
+
+pub mod control {
+    use std::{fs::File, io::Read, path::Path};
+
+    use sysinfo::{Pid, System};
+
+    use crate::get_dir;
+
+    use super::{configure_daemon, configure_toml_file, run};
+
+    /// Takes a `Daemonize` and a target config file. Runs the program as a daemon
+    /// reading reminders from the target config file.
+    pub fn start_daemon() -> anyhow::Result<()> {
+        let dir = get_dir()?;
+        let path = configure_toml_file(&dir)?;
+        let daemon = configure_daemon(&dir)?;
+        match daemon.start() {
+            Ok(_) => {
+                run(&path)?;
+            }
+            Err(e) => eprintln!("there was an error starting the daemon: {e}"),
         }
-        Err(e) => eprintln!("there was an error starting the daemon: {e}"),
+        Ok(())
     }
-    run(&path)?;
-    Ok(())
+    // TODO:
+    // maybe there's a better way to determine if daemon is running?
+    // fix error handlling FFS
+    pub fn is_daemon_running(dir: &Path) -> bool {
+        let path = dir.join("remind.pid");
+        let mut file = File::open(path).unwrap();
+        // TODO:
+        // check if file even exists
+
+        // this feels very scuffed
+        let mut str = String::new();
+        file.read_to_string(&mut str).unwrap();
+        str = str.trim().to_owned();
+
+        let u = str.parse::<u32>().unwrap();
+        let system = System::new_all();
+        system.process(Pid::from_u32(u)).is_some()
+    }
+    // TODO: implement stop
 }
 
 // important note:
@@ -39,7 +68,7 @@ pub fn start_daemon() -> anyhow::Result<()> {
 // and is marked as tokio's entry point
 
 #[tokio::main]
-pub async fn run(file: &Path) -> anyhow::Result<()> {
+async fn run(file: &Path) -> anyhow::Result<()> {
     let (mut debouncer, mut rx) = gen_watcher_receiver()?;
     debouncer
         .watcher()
@@ -83,73 +112,30 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
 }
 
 /// Configure and return a `Daemonize<()>`.
-pub fn configure_daemon(current_dir: &Path) -> anyhow::Result<Daemonize<()>> {
-    let stdout = File::create("/tmp/daemon.out")?;
-    let stderr = File::create("/tmp/daemon.err")?;
-
-    // TODO: add more options
+fn configure_daemon(dir: &Path) -> anyhow::Result<Daemonize<()>> {
+    println!("configuring daemon...");
+    let stdout = File::create(dir.join("daemon.out"))?;
+    let stderr = File::create(dir.join("daemon.err"))?;
     let daemonize = Daemonize::new()
         .stdout(stdout)
         .stderr(stderr)
-        .pid_file(current_dir.join("remind.pid"))
-        .working_directory(current_dir);
+        .pid_file(dir.join("remind.pid"));
+    // .working_directory(dir);
     Ok(daemonize)
 }
+
 /// Uses the directory from `env::current_dir()`
 /// to check for (or create) a configuration directory
 /// which contains the toml file to read from.
 /// This function returns a path to the toml file
-pub fn setup_file(file: &Path) -> anyhow::Result<()> {
-    println!();
-    println!("initializing remind-me daemon...");
-    println!();
-    /*
-        let config_dir_name = "config";
-        let config_file_name = "Config.toml";
-        // TODO:
-        // should this be current_exe?
-        let current_dir = env::current_dir()?;
-        println!("current dir: {current_dir:?}");
-        let config_dir = current_dir.join(config_dir_name);
-
-        let file = config_dir.join(config_file_name);
-    */
-    if !file.exists() {
-        println!("config file does not exist, creating...");
-        File::create(file)?;
+fn configure_toml_file(dir: &Path) -> anyhow::Result<PathBuf> {
+    println!("configuring reminder file...");
+    let path = dir.join("Config.toml");
+    if !path.exists() {
+        println!("didn't find an existing toml file, creating an empty one...");
+        File::create(&path)?;
     } else {
-        println!("found an existing config file");
+        println!("found existing toml file")
     }
-    Ok(())
-}
-
-pub fn is_daemon_running() -> bool {
-    let system = System::new_all();
-    !system
-        .processes_by_name("remind")
-        .collect::<Vec<_>>()
-        .is_empty()
-}
-
-// #[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test_setup_without_file() {
-        use tempfile::tempdir;
-
-        let dir = tempdir().unwrap();
-        let path = dir.path().join("Test.toml");
-        assert!(!path.exists());
-
-        //
-        super::setup_file(&path).unwrap();
-        assert!(path.exists());
-        dir.close().unwrap();
-    }
-    #[test]
-    fn is_daemon_running() {
-        super::start_daemon().unwrap();
-        assert!(super::is_daemon_running());
-    }
+    Ok(path)
 }

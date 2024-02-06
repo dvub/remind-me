@@ -7,6 +7,8 @@ use tokio::sync::mpsc::{channel, Receiver};
 // https://github.com/notify-rs/notify/blob/main/examples/async_monitor.rs
 
 // this is magical
+
+///
 /// Generates and returns a tuplet of a file watcher a receiver.
 /// The watcher must be configured outside of this function to watch a file.
 /// The receiver will receive a message anytime the target file is modified.

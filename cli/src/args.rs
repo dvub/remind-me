@@ -41,9 +41,6 @@ pub enum RemindersCommands {
 #[derive(Subcommand)]
 pub enum ControlCommands {
     IsRunning,
-    Start {
-        #[arg(short, long)]
-        force: bool,
-    },
+    Start,
     Stop,
 }

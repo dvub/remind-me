@@ -6,9 +6,10 @@ mod watcher;
 // TODO: more documentation
 // TODO: testing
 
+use directories::ProjectDirs;
 use serde::Deserialize;
-use std::fs;
-use std::path::Path;
+use std::fs::{self, create_dir};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -23,6 +24,19 @@ pub struct Reminder {
 #[derive(Debug, Deserialize, Clone)]
 pub struct AllReminders {
     pub reminders: Vec<Reminder>,
+}
+// TODO:
+// fix PathBuf return
+pub fn get_dir() -> anyhow::Result<PathBuf> {
+    // TODO:
+    // fix this unwrap since its on an Option
+    let project_dir = ProjectDirs::from("com", "dvub", "remind-me").unwrap();
+    let data_dir = project_dir.data_dir();
+    if !data_dir.exists() {
+        println!("configuring data directory...");
+        create_dir(data_dir)?;
+    }
+    Ok(data_dir.to_path_buf())
 }
 
 pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>> {
