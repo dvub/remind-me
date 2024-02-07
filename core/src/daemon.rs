@@ -1,4 +1,4 @@
-use crate::collect_reminders_from_file;
+use crate::reminders::collect_reminders_from_file;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 use daemonize::Daemonize;
@@ -17,11 +17,11 @@ use std::path::{Path, PathBuf};
 // unify project dir instead of calling it in individual files
 
 pub mod control {
-    use std::{fs::File, io::Read, path::Path};
+    use std::{fs::File, io::Read, str::FromStr};
 
     use sysinfo::{Pid, System};
 
-    use crate::get_dir;
+    use crate::reminders::get_dir;
 
     use super::{configure_daemon, configure_toml_file, run};
 
@@ -39,24 +39,53 @@ pub mod control {
         }
         Ok(())
     }
-    // TODO:
-    // maybe there's a better way to determine if daemon is running?
-    // fix error handlling FFS
-    pub fn is_daemon_running(dir: &Path) -> bool {
+    fn get_pid() -> anyhow::Result<Pid> {
+        let dir = get_dir()?;
         let path = dir.join("remind.pid");
         let mut file = File::open(path).unwrap();
         // TODO:
         // check if file even exists
-
-        // this feels very scuffed
         let mut str = String::new();
-        file.read_to_string(&mut str).unwrap();
-        str = str.trim().to_owned();
-
-        let u = str.parse::<u32>().unwrap();
-        let system = System::new_all();
-        system.process(Pid::from_u32(u)).is_some()
+        file.read_to_string(&mut str)?;
+        let trimmed = str.trim();
+        Ok(Pid::from_str(trimmed)?)
     }
+
+    /*
+        pub fn get_daemon_stats() -> anyhow::Result<()> {
+            let pid = get_pid()?;
+            let system = System::new_all();
+
+            let process = system.process(pid).unwrap();
+
+            let mem = process.virtual_memory();
+            let cpu = process.cpu_usage();
+            let x = process.disk_usage().;
+            Ok(())
+        }
+    */
+    // TODO:
+    // maybe there's a better way to determine if daemon is running?
+    // fix error handlling FFS
+    pub fn is_daemon_running() -> anyhow::Result<bool> {
+        let pid = get_pid()?;
+        let system = System::new_all();
+        let is_running = system.process(pid).is_some();
+        Ok(is_running)
+
+        // system.process(Pid::from_u32(u)).is_some()
+    }
+    pub fn stop_daemon() -> anyhow::Result<()> {
+        let pid = get_pid()?;
+
+        let system = System::new_all();
+        if let Some(process) = system.process(pid) {
+            process.kill();
+            println!("Stopped the daemon");
+        }
+        Ok(())
+    }
+
     // TODO: implement stop
 }
 

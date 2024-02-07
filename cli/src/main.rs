@@ -1,22 +1,20 @@
 use clap::Parser;
-use core::{
-    daemon::control::{is_daemon_running, start_daemon},
-    get_dir,
-};
+use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
 mod args;
 
 use args::{Args, Commands, ControlCommands};
 fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
     println!();
     println!("remind-me CLI - dvub");
     println!();
-    let args = Args::parse();
 
     match args.command {
         Commands::Control { action } => match action {
             ControlCommands::IsRunning => {
                 println!("checking if the remind daemon is running...");
-                let is_running = is_daemon_running(&get_dir().unwrap());
+                let is_running = is_daemon_running().unwrap();
                 match is_running {
                     true => {
                         println!("the daemon is running.");
@@ -25,7 +23,7 @@ fn main() -> anyhow::Result<()> {
                 }
             }
             ControlCommands::Start => {
-                let is_running = is_daemon_running(&get_dir().unwrap());
+                let is_running = is_daemon_running().unwrap();
                 match is_running {
                     true => {
                         println!("error: the daemon is running; multiple instances are not supported at this time. ");
@@ -37,7 +35,19 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             }
-            ControlCommands::Stop => todo!(),
+            ControlCommands::Stop => {
+                let is_running = is_daemon_running().unwrap();
+                match is_running {
+                    true => {
+                        println!("stopping... ");
+                        stop_daemon().unwrap();
+                        println!("successfully stopped daemon.");
+                    }
+                    false => {
+                        println!("the daemon is not running; doing nothing...");
+                    }
+                }
+            }
         },
         Commands::Auth { action: _ } => todo!(),
         Commands::Reminders { action: _ } => todo!(),

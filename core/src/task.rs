@@ -6,7 +6,7 @@ use std::{
 };
 use tokio::{task::JoinHandle, time::sleep};
 
-use crate::Reminder;
+use crate::reminders::Reminder;
 
 pub fn collect_and_run_tasks(
     reminders: Vec<Reminder>,
