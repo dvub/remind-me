@@ -1,10 +1,13 @@
 use std::{
-    fs::{self, create_dir},
+    fs::{self, create_dir, File},
+    io::Write,
     path::{Path, PathBuf},
 };
 
 use directories::ProjectDirs;
 use serde::Deserialize;
+
+use crate::get_dir;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -14,25 +17,22 @@ pub struct Reminder {
     pub icon: Option<String>,
 }
 
+impl Reminder {
+    pub fn new(name: String, description: String, frequency: i32, icon: Option<String>) -> Self {
+        Self {
+            name,
+            description,
+            frequency,
+            icon,
+        }
+    }
+}
+
 // this struct may be used for any other configuration
 // if needed in the future
 #[derive(Debug, Deserialize, Clone)]
 pub struct AllReminders {
     pub reminders: Vec<Reminder>,
-}
-
-// TODO:
-// fix PathBuf return
-pub fn get_dir() -> anyhow::Result<PathBuf> {
-    // TODO:
-    // fix this unwrap since its on an Option
-    let project_dir = ProjectDirs::from("com", "dvub", "remind-me").unwrap();
-    let data_dir = project_dir.data_dir();
-    if !data_dir.exists() {
-        println!("configuring data directory...");
-        create_dir(data_dir)?;
-    }
-    Ok(data_dir.to_path_buf())
 }
 
 pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>> {
@@ -51,9 +51,34 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
     Ok(reminders)
 }
 
+pub fn add_reminder(reminder: Reminder) {
+    let dir = get_dir().unwrap();
+    let path = dir.join("Config.toml");
+    let mut file = File::open(path).unwrap();
+    file.write_all(
+        format!(
+            "
+    [[reminder]]
+    name = \"{}\"
+    description = \"{}\"
+    frequency = {}
+    {}
+    ",
+            reminder.name,
+            reminder.description,
+            reminder.frequency,
+            reminder.icon.unwrap_or_default()
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+}
+
 // why test no work :(
 // #[cfg(test)]
 mod tests {
+    use super::{add_reminder, Reminder};
+
     #[test]
     fn read_from_file() {
         use std::{fs::File, io::Write};
@@ -73,5 +98,10 @@ mod tests {
         assert_eq!(res[0].name, "Hello, world!");
         drop(test_file);
         temp_dir.close().unwrap();
+    }
+    fn test_add_reminder() {
+        let reminder = Reminder::new(String::from("Hello, world!"), String::from(""), 0, None);
+
+        add_reminder(reminder);
     }
 }

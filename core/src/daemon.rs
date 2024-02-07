@@ -17,13 +17,11 @@ use std::path::{Path, PathBuf};
 // unify project dir instead of calling it in individual files
 
 pub mod control {
-    use std::{fs::File, io::Read, str::FromStr};
-
-    use sysinfo::{Pid, System};
-
-    use crate::reminders::get_dir;
+    use crate::get_dir;
 
     use super::{configure_daemon, configure_toml_file, run};
+    use std::{fs::File, io::Read, str::FromStr};
+    use sysinfo::{Pid, System};
 
     /// Takes a `Daemonize` and a target config file. Runs the program as a daemon
     /// reading reminders from the target config file.
@@ -81,7 +79,7 @@ pub mod control {
         let system = System::new_all();
         if let Some(process) = system.process(pid) {
             process.kill();
-            println!("Stopped the daemon");
+            // println!("Stopped the daemon");
         }
         Ok(())
     }

@@ -1,15 +1,14 @@
 use clap::Parser;
+use colored::Colorize;
 use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
 mod args;
 
 use args::{Args, Commands, ControlCommands};
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-
     println!();
     println!("remind-me CLI - dvub");
     println!();
-
     match args.command {
         Commands::Control { action } => match action {
             ControlCommands::IsRunning => {
