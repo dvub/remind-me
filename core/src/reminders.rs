@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, create_dir, File},
+    fs::{self, create_dir, File, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
 };
@@ -51,32 +51,34 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
     Ok(reminders)
 }
 
-pub fn add_reminder(reminder: Reminder) {
-    let dir = get_dir().unwrap();
-    let path = dir.join("Config.toml");
-    let mut file = File::open(path).unwrap();
-    file.write_all(
-        format!(
-            "
-    [[reminder]]
-    name = \"{}\"
-    description = \"{}\"
-    frequency = {}
-    {}
-    ",
-            reminder.name,
-            reminder.description,
-            reminder.frequency,
-            reminder.icon.unwrap_or_default()
-        )
-        .as_bytes(),
-    )
-    .unwrap();
+pub fn add_reminder(mut file: &File, reminder: Reminder) {
+    // let mut file = OpenOptions::new().write(true).open(path).unwrap();
+    let asd = format!(
+        "
+[[reminder]]
+name = \"{}\"
+description = \"{}\"
+frequency = {}
+{}
+",
+        reminder.name,
+        reminder.description,
+        reminder.frequency,
+        reminder.icon.unwrap_or_default()
+    );
+    file.write_all(asd.as_bytes()).unwrap();
 }
 
 // why test no work :(
 // #[cfg(test)]
 mod tests {
+    use std::{
+        fs::{File, OpenOptions},
+        io::{Read, Seek, Write},
+    };
+
+    use tempfile::tempdir;
+
     use super::{add_reminder, Reminder};
 
     #[test]
@@ -99,9 +101,29 @@ mod tests {
         drop(test_file);
         temp_dir.close().unwrap();
     }
+    #[test]
     fn test_add_reminder() {
-        let reminder = Reminder::new(String::from("Hello, world!"), String::from(""), 0, None);
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().join("Test.toml");
+        let mut f = OpenOptions::new()
+            .write(true)
+            .read(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .unwrap();
+        //create(&path).unwrap();
 
-        add_reminder(reminder);
+        let reminder = Reminder::new(String::from("Hello, world!"), String::from(""), 0, None);
+        add_reminder(&mut f, reminder);
+        f.seek(std::io::SeekFrom::Start(0)).unwrap();
+        let mut str = String::new();
+        f.read_to_string(&mut str).unwrap();
+
+        temp_dir.close().unwrap();
+        assert_eq!(
+            str,
+            "[[reminder]]\nname = \"Hello, world!\"\ndescription = \"\"\nfrequency = 0"
+        );
     }
 }
