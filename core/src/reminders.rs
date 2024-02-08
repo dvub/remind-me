@@ -51,20 +51,24 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
     Ok(reminders)
 }
 
+// TODO:
+// icon
 pub fn add_reminder(mut file: &File, reminder: Reminder) {
     // let mut file = OpenOptions::new().write(true).open(path).unwrap();
+    let icon_str = {
+        if let Some(icon) = reminder.icon {
+            format!("icon = \"{}\"", icon)
+        } else {
+            String::new()
+        }
+    };
+
     let asd = format!(
-        "
-[[reminder]]
-name = \"{}\"
-description = \"{}\"
-frequency = {}
-{}
-",
+        "[[reminder]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
         reminder.name,
         reminder.description,
         reminder.frequency,
-        reminder.icon.unwrap_or_default()
+        icon_str // reminder.icon.unwrap_or_default()
     );
     file.write_all(asd.as_bytes()).unwrap();
 }
@@ -101,6 +105,8 @@ mod tests {
         drop(test_file);
         temp_dir.close().unwrap();
     }
+    // TODO:
+    // fix this
     #[test]
     fn test_add_reminder() {
         let temp_dir = tempdir().unwrap();
@@ -114,8 +120,14 @@ mod tests {
             .unwrap();
         //create(&path).unwrap();
 
-        let reminder = Reminder::new(String::from("Hello, world!"), String::from(""), 0, None);
+        let reminder = Reminder::new(
+            String::from("Hello. world."),
+            String::from(""),
+            0,
+            Some("not a real icon".to_owned()),
+        );
         add_reminder(&mut f, reminder);
+        // man wtf.
         f.seek(std::io::SeekFrom::Start(0)).unwrap();
         let mut str = String::new();
         f.read_to_string(&mut str).unwrap();
@@ -123,7 +135,7 @@ mod tests {
         temp_dir.close().unwrap();
         assert_eq!(
             str,
-            "[[reminder]]\nname = \"Hello, world!\"\ndescription = \"\"\nfrequency = 0"
+            "[[reminder]]\nname = \"Hello. world.\"\ndescription = \"\"\nfrequency = 0\nicon = \"not a real icon\""
         );
     }
 }
