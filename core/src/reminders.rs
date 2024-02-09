@@ -4,8 +4,6 @@ use std::{
     io::Write,
     path::Path,
 };
-use toml::Value;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
     pub name: String,
@@ -27,15 +25,18 @@ impl Reminder {
 
 // this struct may be used for any other configuration
 // if needed in the future
-#[derive(Debug, Deserialize, Clone)]
+
+/// Wrapper struct
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
 
-pub fn read_all_reminders(file: &Path) -> anyhow::Result<Vec<Reminder>> {
+/// Attempts to read a vector of Reminders from the specified path
+pub fn read_all_reminders(path: &Path) -> anyhow::Result<Vec<Reminder>> {
     // read the target file and parse them into a data structure
     println!("reading configuration file for reminders...");
-    let toml_str = fs::read_to_string(file)?;
+    let toml_str = fs::read_to_string(path)?;
     // println!("File content: {:?}", toml_str);
 
     if toml_str.is_empty() {
@@ -49,10 +50,12 @@ pub fn read_all_reminders(file: &Path) -> anyhow::Result<Vec<Reminder>> {
 }
 
 // TODO:
+// make sure its a toml file/dont just directly write (ser/deser first)
 // unify create/delete functions to use the same method
 // this might be unnecessary
-
 // does reminder param need to be &?
+
+/// Attempts to add a reminder to the specified path by writing directly to the file.
 pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
     // TODO: improve this
     let icon_str = {
@@ -78,19 +81,21 @@ pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
 /// Attempts to remove a reminder from the toml file at the specified path by name.
 pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<()> {
     let toml_content = fs::read_to_string(path)?;
-    let toml_data: AllReminders = toml::from_str(&toml_content)?;
-    let mut reminders = toml_data.reminders;
+    // i luv turbofish syntax
+    let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
     // modify
     reminders.retain(|r| r.name != name);
-
-    println!("{:?}", reminders);
+    // if empty dont bother
+    // TODO:
+    // rework this
     if reminders.is_empty() {
         fs::write(path, "")?;
         return Ok(());
     }
 
-    let modified_toml = toml::to_string_pretty(&reminders).unwrap();
-    // Write the modified TOML content back to the file
+    // we need to make use of our wrapper struct
+    let ar = AllReminders { reminders };
+    let modified_toml = toml::to_string(&ar).unwrap();
     fs::write(path, modified_toml)?;
     Ok(())
 }
@@ -101,24 +106,15 @@ mod tests {
     use std::io::Read;
 
     #[test]
-    fn read_all_reminders() {
+    fn read_no_reminders() {
         use std::{fs::File, io::Write};
         use tempfile::tempdir;
 
-        let one_reminder = b"[[reminders]]
-        name = \"Hello, world!\"
-        description = \"...\"
-        frequency = 0
-        ";
-
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
-        let mut test_file = File::create(&test_path).unwrap();
-        test_file.write_all(one_reminder).unwrap();
+        File::create(&test_path).unwrap();
         let result = super::read_all_reminders(&test_path).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "Hello, world!");
-        drop(test_file);
+        assert_eq!(result.len(), 0);
         temp_dir.close().unwrap();
     }
     // TODO:
@@ -152,93 +148,61 @@ mod tests {
             "[[reminder]]\nname = \"Hello. world.\"\ndescription = \"\"\nfrequency = 0\nicon = \"not a real icon\""
         );
     }
-    #[test]
-    fn delete_none() {
+
+    // TODO:
+    // should this take a Reminder instead of a &str?
+
+    /// Testing wrapper function that takes a string of TOML and a reminder name,
+    /// writes it to a file, performs the deletion, returning what remains in the file.
+    /// The output of this function is intended to be used for assertions
+    fn read_remaining(reminder_str: &str, name: &str) -> String {
         use std::fs::File;
         use std::io::Write;
         use tempfile::tempdir;
-
-        let one_reminder = b"[[reminders]]
-        name = \"Dont get deleted\"
-        description = \"...\"
-        frequency = 0
-        icon = \"dont panic\"        
-        ";
-
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut test_file = File::create(&test_path).unwrap();
-        test_file.write_all(one_reminder).unwrap();
+        test_file.write_all(reminder_str.as_bytes()).unwrap();
 
-        super::delete_reminder(&test_path, "Hello, world!").unwrap();
+        super::delete_reminder(&test_path, name).unwrap();
 
         let mut f = File::open(test_path).unwrap();
         let mut str_buffer = String::new();
         f.read_to_string(&mut str_buffer).unwrap();
-        // println!("{str_buffer}");
-        assert!(!str_buffer.is_empty());
+        temp_dir.close().unwrap();
+        str_buffer
+    }
+
+    #[test]
+    fn delete_none() {
+        let one_reminder =
+            "[[reminders]]\nname = \"Dont get deleted\"\ndescription = \"...\"\nfrequency = 0";
+
+        let output = read_remaining(one_reminder, "I dont know the name");
+        // the buffer string containing the file output should contain exactly the input
+        assert_eq!(output.trim(), one_reminder);
     }
     #[test]
     fn delete_one() {
-        use std::fs::File;
-        use std::io::Write;
-        use tempfile::tempdir;
-
-        let one_reminder = b"[[reminders]]
+        let one_reminder = "[[reminders]]
         name = \"Hello, world!\"
         description = \"...\"
         frequency = 0
         icon = \"dont panic\"
-
-        
         ";
-
-        let temp_dir = tempdir().unwrap();
-        let test_path = temp_dir.path().join("Test.toml");
-        let mut test_file = File::create(&test_path).unwrap();
-        test_file.write_all(one_reminder).unwrap();
-
-        super::delete_reminder(&test_path, "Hello, world!").unwrap();
-
-        let mut f = File::open(test_path).unwrap();
-        let mut str_buffer = String::new();
-        f.read_to_string(&mut str_buffer).unwrap();
+        let output = read_remaining(one_reminder, "Hello, world!");
         // println!("{str_buffer}");
-        assert!(str_buffer.is_empty());
+        assert!(output.is_empty());
     }
     #[test]
     fn delete_from_multiple() {
-        use std::fs::File;
-        use std::io::Write;
-        use tempfile::tempdir;
-
-        let one_reminder = b"[[reminders]]
-        name = \"Hello, world!\"
-        description = \"...\"
-        frequency = 0
-        icon = \"dont panic\"
-
-        [[reminders]]
-        name = \"H2\"
-        description = \"...\"
-        frequency = 0
-        icon = \"dont panic\"
-        ";
-
-        let temp_dir = tempdir().unwrap();
-        let test_path = temp_dir.path().join("Test.toml");
-        let mut test_file = File::create(&test_path).unwrap();
-        test_file.write_all(one_reminder).unwrap();
-
-        super::delete_reminder(&test_path, "Hello, world!").unwrap();
-
-        let mut f = File::open(test_path).unwrap();
-        let mut str_buffer = String::new();
-        f.read_to_string(&mut str_buffer).unwrap();
-        // println!("{str_buffer}");
-        assert_eq!(
-            str_buffer.trim(),
-            "[[reminders]]\nname = \"H2\"\ndescription = \"...\"\nfrequency = 0\nicon = \"dont panic\""
+        let to_keep = "[[reminders]]\nname = \"H2\"\ndescription = \"...\"\nfrequency = 0\nicon = \"dont panic\"";
+        let reminders_str = format!(
+            "[[reminders]]\nname = \"Hello, world!\"\ndescription = \"...\"\nfrequency = 0\nicon = \"dont panic\"\n{}",
+            to_keep
         );
+        let output = read_remaining(&reminders_str, "Hello, world!");
+        // println!("{str_buffer}");
+        assert_eq!(output.trim(), to_keep);
     }
 }
