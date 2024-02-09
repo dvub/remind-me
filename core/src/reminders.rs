@@ -1,13 +1,10 @@
-use std::{
-    fs::{self, create_dir, File, OpenOptions},
-    io::Write,
-    path::{Path, PathBuf},
-};
-
-use directories::ProjectDirs;
 use serde::Deserialize;
-
-use crate::get_dir;
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
+use toml::Value;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
@@ -35,7 +32,7 @@ pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
 
-pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>> {
+pub fn read_all_reminders(file: &Path) -> anyhow::Result<Vec<Reminder>> {
     // read the target file and parse them into a data structure
     println!("reading configuration file for reminders...");
     let toml_str = fs::read_to_string(file)?;
@@ -52,9 +49,12 @@ pub fn collect_reminders_from_file(file: &Path) -> anyhow::Result<Vec<Reminder>>
 }
 
 // TODO:
-// icon
-pub fn add_reminder(mut file: &File, reminder: Reminder) {
-    // let mut file = OpenOptions::new().write(true).open(path).unwrap();
+// unify create/delete functions to use the same method
+// this might be unnecessary
+
+// does reminder param need to be &?
+pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
+    // TODO: improve this
     let icon_str = {
         if let Some(icon) = reminder.icon {
             format!("icon = \"{}\"", icon)
@@ -63,30 +63,56 @@ pub fn add_reminder(mut file: &File, reminder: Reminder) {
         }
     };
 
-    let asd = format!(
+    let toml_str = format!(
         "[[reminder]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
         reminder.name,
         reminder.description,
         reminder.frequency,
         icon_str // reminder.icon.unwrap_or_default()
     );
-    file.write_all(asd.as_bytes()).unwrap();
+    let mut file = File::options().write(true).open(path)?;
+    file.write_all(toml_str.as_bytes())?;
+    Ok(())
+}
+
+/// Attempts to remove a reminder from the toml file at the specified path by name.
+pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<()> {
+    let toml_content = fs::read_to_string(path)?;
+    let mut toml_data: Value = toml::from_str(&toml_content)?;
+    if let Value::Table(ref mut toml_table) = toml_data {
+        // TODO:
+        // fix cloning the table
+        for (key, value) in toml_table.clone().iter() {
+            if let Some(value) = value.as_str() {
+                if key == "name" && value == name {
+                    println!("DID IT WORK");
+                    toml_table.remove(key);
+                }
+            }
+        }
+        println!("{:?}", toml_table);
+        // else ...
+    } else {
+        // TODO:
+        // throw err?
+    }
+
+    // Serialize the modified TOML data
+    let modified_toml = toml::to_string_pretty(&toml_data)?;
+
+    // Write the modified TOML content back to the file
+    fs::write(path, modified_toml)?;
+
+    Ok(())
 }
 
 // why test no work :(
 // #[cfg(test)]
 mod tests {
-    use std::{
-        fs::{File, OpenOptions},
-        io::{Read, Seek, Write},
-    };
-
-    use tempfile::tempdir;
-
-    use super::{add_reminder, Reminder};
+    use std::io::Read;
 
     #[test]
-    fn read_from_file() {
+    fn read_all_reminders() {
         use std::{fs::File, io::Write};
         use tempfile::tempdir;
 
@@ -95,13 +121,14 @@ mod tests {
         description = \"...\"
         frequency = 0
         ";
+
         let temp_dir = tempdir().unwrap();
-        let path = temp_dir.path().join("Test.toml");
-        let mut test_file = File::create(&path).unwrap();
+        let test_path = temp_dir.path().join("Test.toml");
+        let mut test_file = File::create(&test_path).unwrap();
         test_file.write_all(one_reminder).unwrap();
-        let res = super::collect_reminders_from_file(&path).unwrap();
-        assert_eq!(res.len(), 1);
-        assert_eq!(res[0].name, "Hello, world!");
+        let result = super::read_all_reminders(&test_path).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "Hello, world!");
         drop(test_file);
         temp_dir.close().unwrap();
     }
@@ -109,15 +136,13 @@ mod tests {
     // fix this
     #[test]
     fn test_add_reminder() {
+        use super::{add_reminder, Reminder};
+        use std::{fs::File, io::Read};
+        use tempfile::tempdir;
+
         let temp_dir = tempdir().unwrap();
-        let path = temp_dir.path().join("Test.toml");
-        let mut f = OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .unwrap();
+        let test_file_path = temp_dir.path().join("Test.toml");
+        File::create(&test_file_path).unwrap();
         //create(&path).unwrap();
 
         let reminder = Reminder::new(
@@ -126,16 +151,41 @@ mod tests {
             0,
             Some("not a real icon".to_owned()),
         );
-        add_reminder(&mut f, reminder);
+        add_reminder(&test_file_path, reminder).unwrap();
         // man wtf.
-        f.seek(std::io::SeekFrom::Start(0)).unwrap();
-        let mut str = String::new();
-        f.read_to_string(&mut str).unwrap();
+        let mut file_read = File::open(&test_file_path).unwrap();
+        let mut string_buffer = String::new();
+        file_read.read_to_string(&mut string_buffer).unwrap();
 
         temp_dir.close().unwrap();
         assert_eq!(
-            str,
+            string_buffer,
             "[[reminder]]\nname = \"Hello. world.\"\ndescription = \"\"\nfrequency = 0\nicon = \"not a real icon\""
         );
+    }
+    #[test]
+    fn test_delete() {
+        use std::fs::File;
+        use std::io::Write;
+        use tempfile::tempdir;
+
+        let one_reminder = b"[[reminders]]
+        name = \"Hello, world!\"
+        description = \"...\"
+        frequency = 0
+        ";
+
+        let temp_dir = tempdir().unwrap();
+        let test_path = temp_dir.path().join("Test.toml");
+        let mut test_file = File::create(&test_path).unwrap();
+        test_file.write_all(one_reminder).unwrap();
+
+        super::delete_reminder(&test_path, "Hello, world!").unwrap();
+
+        let mut f = File::open(test_path).unwrap();
+        let mut str_buffer = String::new();
+        f.read_to_string(&mut str_buffer).unwrap();
+        println!("{str_buffer}");
+        assert!(str_buffer.is_empty());
     }
 }

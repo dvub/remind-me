@@ -1,4 +1,4 @@
-use crate::reminders::collect_reminders_from_file;
+use crate::reminders::read_all_reminders;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 use daemonize::Daemonize;
@@ -101,7 +101,7 @@ async fn run(file: &Path) -> anyhow::Result<()> {
         .watcher()
         .watch(file, RecursiveMode::NonRecursive)?;
 
-    let mut reminders = collect_reminders_from_file(file)?;
+    let mut reminders = read_all_reminders(file)?;
     let mut tasks = collect_and_run_tasks(reminders.clone());
     loop {
         // at the moment, we don't care about what the message is
@@ -109,7 +109,7 @@ async fn run(file: &Path) -> anyhow::Result<()> {
         let _ = rx.recv().await.unwrap();
         // now that we know there's been a change, restart tasks
 
-        let new_reminders = collect_reminders_from_file(file)?;
+        let new_reminders = read_all_reminders(file)?;
         let mut hasher = DefaultHasher::new();
         let to_abort: Vec<_> = reminders
             .iter()
