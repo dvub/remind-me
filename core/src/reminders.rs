@@ -83,14 +83,15 @@ pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<()> {
         // TODO:
         // fix cloning the table
         for (key, value) in toml_table.clone().iter() {
+            println!("ASD");
             if let Some(value) = value.as_str() {
                 if key == "name" && value == name {
-                    println!("DID IT WORK");
+                    // println!("DID IT WORK");
                     toml_table.remove(key);
                 }
             }
         }
-        println!("{:?}", toml_table);
+        //println!("{:?}", toml_table);
         // else ...
     } else {
         // TODO:
