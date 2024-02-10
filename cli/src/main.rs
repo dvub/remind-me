@@ -1,14 +1,20 @@
 use clap::Parser;
 use colored::Colorize;
-use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
+use core::{
+    daemon::control::{is_daemon_running, start_daemon, stop_daemon},
+    get_dir,
+};
 mod args;
 
 use args::{Args, Commands, ControlCommands};
+
+use crate::args::RemindersCommands;
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     println!();
     println!("remind-me CLI - dvub");
     println!();
+
     match args.command {
         Commands::Control { action } => match action {
             ControlCommands::IsRunning => {
@@ -48,8 +54,11 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         },
-        Commands::Auth { action: _ } => todo!(),
-        Commands::Reminders { action: _ } => todo!(),
+        Commands::Reminders { action } => match action {
+            RemindersCommands::Add => todo!(),
+            RemindersCommands::Update => todo!(),
+            RemindersCommands::Delete => todo!(),
+        },
     }
     Ok(())
 }

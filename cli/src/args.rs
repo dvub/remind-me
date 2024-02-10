@@ -25,17 +25,6 @@ pub enum Commands {
         #[command(subcommand)]
         action: RemindersCommands,
     },
-    /// Auth commands. Login, logout, etc.
-    Auth {
-        #[command(subcommand)]
-        action: AuthCommands,
-    },
-}
-#[derive(Subcommand)]
-pub enum AuthCommands {
-    Status,
-    Login,
-    Logout,
 }
 
 #[derive(Subcommand)]
