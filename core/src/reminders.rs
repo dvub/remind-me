@@ -107,7 +107,7 @@ pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>
     Ok(reminders.iter().find(|r| r.name == name).cloned())
 }
 
-pub fn edit_reminder(path: &Path) {}
+pub fn edit_reminder(path: &Path, name: &str) {}
 
 // why test no work :(
 // #[cfg(test)]
@@ -124,6 +124,23 @@ mod tests {
         File::create(&test_path).unwrap();
         let result = super::read_all_reminders(&test_path).unwrap();
         assert_eq!(result.len(), 0);
+        temp_dir.close().unwrap();
+    }
+    #[test]
+    fn read_all_reminders() {
+        use std::{fs::File, io::Write};
+        use tempfile::tempdir;
+
+        let temp_dir = tempdir().unwrap();
+        let test_path = temp_dir.path().join("Test.toml");
+        let mut f = File::create(&test_path).unwrap();
+
+        // write a few reminders into test file
+        f.write_all(b"[[reminders]]\nname = \"Find me!\"\ndescription = \"...\"\nfrequency = 0\n[[reminders]]\nname = \"Dont find me\"\ndescription = \"You found me...\"\nfrequency = 1")
+                .unwrap();
+        let result = super::read_all_reminders(&test_path).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "Find me!");
         temp_dir.close().unwrap();
     }
     #[test]
