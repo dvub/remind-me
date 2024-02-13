@@ -1,13 +1,6 @@
-use crate::reminders::read_all_reminders;
-use crate::task::collect_and_run_tasks;
-use crate::watcher::gen_watcher_receiver;
 use daemonize::Daemonize;
-use notify::{RecursiveMode, Watcher};
-use std::collections::hash_map::DefaultHasher;
-
 use std::fs::File;
-use std::hash::{Hash, Hasher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 // thank you kyillingene
 // for helping me learn about async rust programming
 // this would have taken hours without help
@@ -17,9 +10,9 @@ use std::path::{Path, PathBuf};
 // unify project dir instead of calling it in individual files
 
 pub mod control {
-    use crate::get_dir;
+    use crate::{configure_toml_file, get_dir, run};
 
-    use super::{configure_daemon, configure_toml_file, run};
+    use super::configure_daemon;
     use std::{fs::File, io::Read, str::FromStr};
     use sysinfo::{Pid, System};
 
@@ -85,57 +78,6 @@ pub mod control {
     }
 
     // TODO: implement stop
-}
-
-// important note:
-// the actual entry function (main()) cannot be marked by tokio
-// or else daemonize will NOT WORK!
-// source: https://stackoverflow.com/questions/76042987/having-problem-in-rust-with-tokio-and-daemonize-how-to-get-them-to-work-togethe
-// instead, this function contains all the program logic
-// and is marked as tokio's entry point
-
-#[tokio::main]
-async fn run(file: &Path) -> anyhow::Result<()> {
-    let (mut debouncer, mut rx) = gen_watcher_receiver()?;
-    debouncer
-        .watcher()
-        .watch(file, RecursiveMode::NonRecursive)?;
-
-    let mut reminders = read_all_reminders(file)?;
-    let mut tasks = collect_and_run_tasks(reminders.clone());
-    loop {
-        // at the moment, we don't care about what the message is
-        // we just need to wait for a change to happen
-        let _ = rx.recv().await.unwrap();
-        // now that we know there's been a change, restart tasks
-
-        let new_reminders = read_all_reminders(file)?;
-        let mut hasher = DefaultHasher::new();
-        let to_abort: Vec<_> = reminders
-            .iter()
-            .filter(|r| !new_reminders.contains(r))
-            .map(|reminder| {
-                reminder.hash(&mut hasher);
-                hasher.finish()
-            })
-            .collect();
-
-        for (handle, hash) in &tasks {
-            if to_abort.iter().any(|abort_hash| abort_hash == hash) {
-                handle.abort();
-                println!("aborted a task: {hash}");
-            }
-        }
-
-        let to_start: Vec<_> = new_reminders
-            .iter()
-            .filter(|x| !reminders.contains(*x))
-            .cloned()
-            .collect();
-        //
-        tasks = collect_and_run_tasks(to_start);
-        reminders = new_reminders;
-    }
 }
 
 /// Configure and return a `Daemonize<()>`.

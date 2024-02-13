@@ -95,10 +95,19 @@ pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<()> {
 
     // we need to make use of our wrapper struct
     let ar = AllReminders { reminders };
-    let modified_toml = toml::to_string(&ar).unwrap();
+    let modified_toml = toml::to_string(&ar)?;
     fs::write(path, modified_toml)?;
     Ok(())
 }
+
+pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>> {
+    let toml_content = fs::read_to_string(path)?;
+    let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+    // TODO: rm cloned
+    Ok(reminders.iter().find(|r| r.name == name).cloned())
+}
+
+pub fn edit_reminder(path: &Path) {}
 
 // why test no work :(
 // #[cfg(test)]
@@ -115,6 +124,29 @@ mod tests {
         File::create(&test_path).unwrap();
         let result = super::read_all_reminders(&test_path).unwrap();
         assert_eq!(result.len(), 0);
+        temp_dir.close().unwrap();
+    }
+    #[test]
+    fn read_one() {
+        use std::{fs::File, io::Write};
+        use tempfile::tempdir;
+
+        let temp_dir = tempdir().unwrap();
+        let test_path = temp_dir.path().join("Test.toml");
+        let mut f = File::create(&test_path).unwrap();
+        // write a few reminders into test file
+        f.write_all(b"[[reminders]]\nname = \"Find me!\"\ndescription = \"...\"\nfrequency = 0\n[[reminders]]\nname = \"Dont find me\"\ndescription = \"You found me...\"\nfrequency = 1")
+            .unwrap();
+
+        // use our function in a few different ways
+        let result = super::read_reminder(&test_path, "Find me!").unwrap();
+        let result_none = super::read_reminder(&test_path, "This doesnt exist").unwrap();
+        let result_secret = super::read_reminder(&test_path, "Dont find me").unwrap();
+
+        // make sure we get the expected results
+        assert_eq!(result.unwrap().description, "...");
+        assert_eq!(result_secret.unwrap().description, "You found me...");
+        assert!(result_none.is_none());
         temp_dir.close().unwrap();
     }
     // TODO:
