@@ -1,4 +1,7 @@
-use std::{fs::create_dir, path::PathBuf};
+use std::{
+    fs::{create_dir, File},
+    path::{Path, PathBuf},
+};
 
 use directories::ProjectDirs;
 
@@ -24,4 +27,20 @@ pub fn get_dir() -> anyhow::Result<PathBuf> {
     }
     println!("{:?}", data_dir);
     Ok(data_dir.to_path_buf())
+}
+
+/// Uses the directory from `env::current_dir()`
+/// to check for (or create) a configuration directory
+/// which contains the toml file to read from.
+/// This function returns a path to the toml file
+fn configure_toml_file(dir: &Path) -> anyhow::Result<PathBuf> {
+    println!("configuring reminder file...");
+    let path = dir.join("Config.toml");
+    if !path.exists() {
+        println!("didn't find an existing toml file, creating an empty one...");
+        File::create(&path)?;
+    } else {
+        println!("found existing toml file")
+    }
+    Ok(path)
 }
