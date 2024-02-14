@@ -11,3 +11,4 @@ core = { path = "../core" }
 anyhow = "1.0.79"
 log = "0.4.20"
 colored = "2.1.0"
+notify-rust = "4.10.0"

@@ -1,9 +1,6 @@
 use clap::Parser;
-use colored::Colorize;
-use core::{
-    daemon::control::{is_daemon_running, start_daemon, stop_daemon},
-    get_dir,
-};
+use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
+use notify_rust::Notification;
 mod args;
 
 use args::{Args, Commands, ControlCommands};
@@ -14,6 +11,11 @@ fn main() -> anyhow::Result<()> {
     println!();
     println!("remind-me CLI - dvub");
     println!();
+
+    Notification::new()
+        .summary("is this working??")
+        .show()
+        .unwrap();
 
     match args.command {
         Commands::Control { action } => match action {
@@ -28,6 +30,8 @@ fn main() -> anyhow::Result<()> {
                 }
             }
             ControlCommands::Start => {
+                start_daemon()?;
+                /*
                 let is_running = is_daemon_running().unwrap();
                 match is_running {
                     true => {
@@ -39,6 +43,7 @@ fn main() -> anyhow::Result<()> {
                         start_daemon()?;
                     }
                 }
+                */
             }
             ControlCommands::Stop => {
                 let is_running = is_daemon_running().unwrap();

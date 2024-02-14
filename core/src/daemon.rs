@@ -10,7 +10,7 @@ use std::path::Path;
 // unify project dir instead of calling it in individual files
 
 pub mod control {
-    use crate::{configure_toml_file, get_dir, run};
+    use crate::{get_dir, get_path, run};
 
     use super::configure_daemon;
     use std::{fs::File, io::Read, str::FromStr};
@@ -20,7 +20,7 @@ pub mod control {
     /// reading reminders from the target config file.
     pub fn start_daemon() -> anyhow::Result<()> {
         let dir = get_dir()?;
-        let path = configure_toml_file(&dir)?;
+        let path = get_path()?;
         let daemon = configure_daemon(&dir)?;
         match daemon.start() {
             Ok(_) => {
@@ -32,8 +32,10 @@ pub mod control {
     }
     fn get_pid() -> anyhow::Result<Pid> {
         let dir = get_dir()?;
+        println!("{:?}", dir.display());
         let path = dir.join("remind.pid");
-        let mut file = File::open(path).unwrap();
+
+        let mut file = File::open(path)?;
         // TODO:
         // check if file even exists
         let mut str = String::new();
