@@ -1,40 +1,30 @@
 use notify_rust::Notification;
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-    time::Duration,
-};
-use tokio::{task::JoinHandle, time::sleep};
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::Mutex, time::sleep};
 
 use crate::reminders::Reminder;
 
-pub fn collect_and_run_tasks(
-    reminders: Vec<Reminder>,
-) -> Vec<(JoinHandle<anyhow::Result<()>>, u64)> {
-    let mut hasher = DefaultHasher::new();
-
-    if reminders.is_empty() {
-        println!("no reminders were round/read. WARNING: not spawning any tasks");
-        return Vec::new();
-    }
-
-    println!("(re)starting reminders...");
-
+pub fn collect_and_run_tasks(reminders: Arc<Mutex<Vec<Reminder>>>) -> anyhow::Result<()> {
     reminders
-        .into_iter()
-        .map(|reminder| {
-            reminder.hash(&mut hasher);
-            let hash = hasher.finish();
-            (tokio::spawn(start_reminder_task(reminder)), hash)
-        })
-        .collect()
+        .blocking_lock()
+        .iter()
+        .enumerate()
+        .for_each(|(i, _)| {
+            tokio::spawn(start_reminder_task(reminders.clone(), i));
+        });
+
+    Ok(())
 }
 
 /// Sends a desktop notification on the interval specified by `reminder`
-pub async fn start_reminder_task(reminder: Reminder) -> anyhow::Result<()> {
-    println!("starting a new reminder: {}", &reminder.name);
+pub async fn start_reminder_task(
+    reminders: Arc<Mutex<Vec<Reminder>>>,
+    index: usize,
+) -> anyhow::Result<()> {
     loop {
-        sleep(Duration::from_secs(reminder.frequency as u64)).await;
+        let r = &reminders.lock().await[index];
+        sleep(Duration::from_secs(r.frequency as u64)).await;
+        let reminder = &reminders.lock().await[index];
         let icon = reminder.icon.clone().unwrap_or_default();
         println!("displaying reminder: {}", &reminder.name);
         Notification::new()
