@@ -1,8 +1,5 @@
 use clap::Parser;
-use core::{
-    daemon::control::{is_daemon_running, start_daemon, stop_daemon},
-    get_path, run,
-};
+use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
 use notify_rust::Notification;
 mod args;
 
@@ -33,7 +30,7 @@ fn main() -> anyhow::Result<()> {
                 }
             }
             ControlCommands::Start => {
-                run(&get_path().unwrap()).unwrap();
+                start_daemon()?;
                 /*
                 let is_running = is_daemon_running().unwrap();
                 match is_running {

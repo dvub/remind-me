@@ -2,12 +2,12 @@ use crate::reminders::read_all_reminders;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 use notify::{RecursiveMode, Watcher};
-use std::sync::Arc;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::{
     fs::{create_dir, File},
     path::{Path, PathBuf},
 };
-use tokio::sync::Mutex;
 
 use directories::ProjectDirs;
 
@@ -54,12 +54,44 @@ pub fn get_path() -> anyhow::Result<PathBuf> {
 
 #[tokio::main]
 pub async fn run(file: &Path) -> anyhow::Result<()> {
-    let reminders = read_all_reminders(file)?;
-    let arc = Arc::new(Mutex::new(reminders));
-    let debouncer = gen_watcher_receiver(arc.clone(), file.to_path_buf());
-    debouncer?
+    let (mut debouncer, mut rx) = gen_watcher_receiver()?;
+    debouncer
         .watcher()
         .watch(file, RecursiveMode::NonRecursive)?;
-    collect_and_run_tasks(arc.clone()).unwrap();
-    Ok(())
+
+    let mut reminders = read_all_reminders(file)?;
+    let mut tasks = collect_and_run_tasks(reminders.clone());
+    loop {
+        // at the moment, we don't care about what the message is
+        // we just need to wait for a change to happen
+        let _ = rx.recv().await.unwrap();
+        // now that we know there's been a change, restart tasks
+
+        let new_reminders = read_all_reminders(file)?;
+        let mut hasher = DefaultHasher::new();
+        let to_abort: Vec<_> = reminders
+            .iter()
+            .filter(|r| !new_reminders.contains(r))
+            .map(|reminder| {
+                reminder.hash(&mut hasher);
+                hasher.finish()
+            })
+            .collect();
+
+        for (handle, hash) in &tasks {
+            if to_abort.iter().any(|abort_hash| abort_hash == hash) {
+                handle.abort();
+                println!("aborted a task: {hash}");
+            }
+        }
+
+        let to_start: Vec<_> = new_reminders
+            .iter()
+            .filter(|x| !reminders.contains(*x))
+            .cloned()
+            .collect();
+        //
+        tasks = collect_and_run_tasks(to_start);
+        reminders = new_reminders;
+    }
 }
