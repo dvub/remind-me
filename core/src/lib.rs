@@ -12,9 +12,9 @@ use std::{
 use directories::ProjectDirs;
 
 pub mod daemon;
-mod reminders;
-mod task;
-mod watcher;
+pub mod reminders;
+pub mod task;
+pub mod watcher;
 // TODO: fix error propagation/handling in general
 // its a shitshow right now
 // TODO: more documentation

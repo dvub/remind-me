@@ -30,9 +30,12 @@ pub mod control {
         }
         Ok(())
     }
+    // TODO:
+    // handle when pid doesn't exist
+    // big issue for first time running
     fn get_pid() -> anyhow::Result<Pid> {
         let dir = get_dir()?;
-        println!("{:?}", dir.display());
+        // println!("{:?}", dir.display());
         let path = dir.join("remind.pid");
 
         let mut file = File::open(path)?;

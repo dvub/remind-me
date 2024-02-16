@@ -1,5 +1,10 @@
 use clap::Parser;
-use core::daemon::control::{is_daemon_running, start_daemon, stop_daemon};
+use core::{
+    daemon::control::{is_daemon_running, start_daemon, stop_daemon},
+    get_path,
+    reminders::{add_reminder, delete_reminder, edit_reminder, EditReminder, Reminder},
+    run,
+};
 use notify_rust::Notification;
 mod args;
 
@@ -11,17 +16,13 @@ fn main() -> anyhow::Result<()> {
     println!();
     println!("remind-me CLI - dvub");
     println!();
-
-    Notification::new()
-        .summary("is this working??")
-        .show()
-        .unwrap();
+    let path = get_path()?;
 
     match args.command {
         Commands::Control { action } => match action {
             ControlCommands::IsRunning => {
                 println!("checking if the remind daemon is running...");
-                let is_running = is_daemon_running().unwrap();
+                let is_running = is_daemon_running()?;
                 match is_running {
                     true => {
                         println!("the daemon is running.");
@@ -29,28 +30,29 @@ fn main() -> anyhow::Result<()> {
                     false => println!("the daemon is not running."),
                 }
             }
-            ControlCommands::Start => {
-                start_daemon()?;
-                /*
-                let is_running = is_daemon_running().unwrap();
-                match is_running {
-                    true => {
-                        println!("error: the daemon is running; multiple instances are not supported at this time. ");
+            ControlCommands::Start { daemon } => {
+                if daemon {
+                    let is_running = is_daemon_running()?;
+                    match is_running {
+                        true => {
+                            println!("error: the daemon is running; multiple instances are not supported at this time. ");
+                        }
+                        false => {
+                            println!("the daemon is not running; starting...");
+                            // BOOM SUPER IMPORTANT RIGHT HERE!!
+                            start_daemon()?;
+                        }
                     }
-                    false => {
-                        println!("the daemon is not running; starting...");
-                        // BOOM SUPER IMPORTANT RIGHT HERE!!
-                        start_daemon()?;
-                    }
+                } else {
+                    run(&path)?;
                 }
-                */
             }
             ControlCommands::Stop => {
-                let is_running = is_daemon_running().unwrap();
+                let is_running = is_daemon_running()?;
                 match is_running {
                     true => {
                         println!("stopping... ");
-                        stop_daemon().unwrap();
+                        stop_daemon()?;
                         println!("successfully stopped daemon.");
                     }
                     false => {
@@ -60,9 +62,36 @@ fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Reminders { action } => match action {
-            RemindersCommands::Add => todo!(),
-            RemindersCommands::Update => todo!(),
-            RemindersCommands::Delete => todo!(),
+            RemindersCommands::Add {
+                name,
+                description,
+                frequency,
+                icon,
+            } => {
+                let reminder = Reminder {
+                    name,
+                    description,
+                    frequency,
+                    icon,
+                };
+                add_reminder(&path, reminder)?;
+            }
+            RemindersCommands::Update {
+                name,
+                new_name,
+                description,
+                frequency,
+                icon,
+            } => {
+                let new_data = EditReminder {
+                    name: new_name,
+                    description,
+                    frequency,
+                    icon,
+                };
+                edit_reminder(&path, &name, new_data)?;
+            }
+            RemindersCommands::Delete { name } => delete_reminder(&path, &name)?,
         },
     }
     Ok(())

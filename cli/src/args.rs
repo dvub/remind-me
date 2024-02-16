@@ -29,17 +29,44 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum RemindersCommands {
-    Add,
-    Update,
-    Delete,
+    Add {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        description: String,
+        #[arg(long)]
+        frequency: i32,
+        #[arg(long)]
+        icon: Option<String>,
+    },
+    Update {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        new_name: Option<String>,
+        #[arg(long)]
+        description: Option<String>,
+        #[arg(long)]
+        frequency: Option<i32>,
+        #[arg(long)]
+        icon: Option<String>,
+    },
+    Delete {
+        #[arg(long)]
+        name: String,
+    },
 }
 
 #[derive(Subcommand)]
 pub enum ControlCommands {
-    /// Prints if the daemon is running or not.
+    /// Prints if the daemon is running or not. Note this only works if the program was started as a daemon.
     IsRunning,
-    /// Starts the daemon if it's not already running. Multiple instances are not supported at this time.
-    Start,
-    /// Stops the daemon if it is running.
+    /// Runs the program. Runs as a daemon if the option is enabled.
+    Start {
+        /// Runs the program as a daemon. NOTE: AFAIK this is only supported for linux.
+        #[arg(long, short)]
+        daemon: bool,
+    },
+    /// Stops the daemon if it is running. Note this only works if the program was started as a daemon.
     Stop,
 }
