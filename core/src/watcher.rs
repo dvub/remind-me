@@ -22,6 +22,7 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
         Ok(debounced_events) => {
             for event in debounced_events {
                 if let EventKind::Modify(_) = event.kind {
+                    println!("Detected a change...");
                     tx.blocking_send(event).unwrap();
                 }
             }

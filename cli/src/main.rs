@@ -17,6 +17,7 @@ fn main() -> anyhow::Result<()> {
     println!("remind-me CLI - dvub");
     println!();
     let path = get_path()?;
+    println!("{:?}", path.display());
 
     match args.command {
         Commands::Control { action } => match action {
