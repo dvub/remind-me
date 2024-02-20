@@ -75,13 +75,13 @@ pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
     };
 
     let toml_str = format!(
-        "[[reminder]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
+        "[[reminders]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
         reminder.name,
         reminder.description,
         reminder.frequency,
         icon_str // reminder.icon.unwrap_or_default()
     );
-    let mut file = File::options().write(true).open(path)?;
+    let mut file = File::options().write(true).append(true).open(path)?;
     file.write_all(toml_str.as_bytes())?;
     Ok(())
 }

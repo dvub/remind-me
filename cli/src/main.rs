@@ -5,7 +5,6 @@ use core::{
     reminders::{add_reminder, delete_reminder, edit_reminder, EditReminder, Reminder},
     run,
 };
-use notify_rust::Notification;
 mod args;
 
 use args::{Args, Commands, ControlCommands};
