@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
-    ops::Index,
     path::Path,
 };
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
@@ -81,7 +80,7 @@ pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
         reminder.frequency,
         icon_str // reminder.icon.unwrap_or_default()
     );
-    let mut file = File::options().write(true).append(true).open(path)?;
+    let mut file = File::options().append(true).open(path)?;
     file.write_all(toml_str.as_bytes())?;
     Ok(())
 }

@@ -2,6 +2,7 @@ use crate::reminders::read_all_reminders;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 use notify::{RecursiveMode, Watcher};
+use reminders::Reminder;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::{
@@ -68,21 +69,29 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
         // now that we know there's been a change, restart tasks
 
         let new_reminders = read_all_reminders(file)?;
-        let mut hasher = DefaultHasher::new();
-        let to_abort: Vec<_> = reminders
+
+        let reminders_to_abort: Vec<_> = reminders
             .iter()
             .filter(|r| !new_reminders.contains(r))
-            .map(|reminder| {
-                reminder.hash(&mut hasher);
-                hasher.finish()
+            .collect::<Vec<_>>();
+        let to_abort = get_hashes(reminders_to_abort);
+
+        let indices_to_remove: Vec<usize> = tasks
+            .iter()
+            .enumerate()
+            .filter_map(|(index, (handle, hash))| {
+                if to_abort.contains(hash) {
+                    handle.abort();
+                    println!("aborted a task: {}", hash);
+                    Some(index)
+                } else {
+                    None
+                }
             })
             .collect();
 
-        for (handle, hash) in &tasks {
-            if to_abort.iter().any(|abort_hash| abort_hash == hash) {
-                handle.abort();
-                println!("aborted a task: {hash}");
-            }
+        for &index in indices_to_remove.iter().rev() {
+            tasks.remove(index);
         }
 
         let to_start: Vec<_> = new_reminders
@@ -91,7 +100,18 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
             .cloned()
             .collect();
         //
-        tasks = collect_and_run_tasks(to_start);
+        tasks.append(&mut collect_and_run_tasks(to_start));
         reminders = new_reminders;
     }
+}
+
+pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
+    reminders
+        .iter()
+        .map(|reminder| {
+            let mut hasher = DefaultHasher::new();
+            reminder.hash(&mut hasher);
+            hasher.finish()
+        })
+        .collect::<Vec<_>>()
 }
