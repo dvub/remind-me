@@ -2,7 +2,9 @@ use clap::Parser;
 use core::{
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     get_path,
-    reminders::{add_reminder, delete_reminder, edit_reminder, EditReminder, Reminder},
+    reminders::{
+        add_reminder, delete_reminder, edit_reminder, read_all_reminders, EditReminder, Reminder,
+    },
     run,
 };
 mod args;
@@ -62,6 +64,16 @@ fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Reminders { action } => match action {
+            RemindersCommands::List => {
+                println!("Printing all current reminders...");
+                let all = read_all_reminders(&path)?;
+                for (index, reminder) in all.iter().enumerate() {
+                    println!("{}. {}", index + 1, reminder.name);
+                    println!("Description: {}", reminder.description);
+                    println!("Frequency: {} seconds", reminder.frequency);
+                    println!();
+                }
+            }
             RemindersCommands::Add {
                 name,
                 description,
