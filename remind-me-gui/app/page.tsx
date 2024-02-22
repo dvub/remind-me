@@ -15,25 +15,15 @@ import { useEffect, useState } from 'react';
 import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
 export default function Home() {
-	const [r, setR] = useState();
+	const [reminders, setReminders] = useState<Reminder[]>();
 	useEffect(() => {
-		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => console.log(res)).catch(e => console.log(e));		
-	})
+		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
+			setReminders(res)
+			console.log(res);
+		}).catch(e => console.log(e));		
+	}, []);
 
-	const reminders = [
-		{
-			title: 'Stretch',
-			description: "Don't forget to stretch!",
-			frequency: 128,
-		},
-		{
-			title: 'Drink water',
-			description: 'Remember to stay hydrated!',
-			frequency: 600,
-		},
-	];
-
-	const cards = reminders.map((reminder, index) => {
+	const cards = reminders ? reminders.map((reminder, index) => {
 		const minutes = Math.floor(reminder.frequency / 60);
 		const seconds = reminder.frequency % 60;
 
@@ -45,7 +35,7 @@ export default function Home() {
 				<CardHeader>
 					<div className='flex justify-between'>
 						<div>
-							<CardTitle>{reminder.title}</CardTitle>
+							<CardTitle>{reminder.name}</CardTitle>
 							<CardDescription>
 								{reminder.description}
 							</CardDescription>
@@ -60,14 +50,17 @@ export default function Home() {
 					<div>
 						<h1 className='text-xl font-bold'>Frequency</h1>
 						<p>
-							Every {minutes} minutes
-							{seconds > 0 && `, ${seconds} seconds`}.
+							Every
+							{minutes > 0 && ` ${minutes} minutes`}
+							{minutes > 0 && seconds > 0 && ','}
+							{seconds > 0 && ` ${seconds} seconds`}
+							.
 						</p>
 					</div>
 				</CardContent>
 			</Card>
 		);
-	});
+	}) : <p>loading</p>;
 
 	return (
 		<main className='mx-[10vw]'>
