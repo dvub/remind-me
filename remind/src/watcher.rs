@@ -44,6 +44,11 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
     )?;
     Ok((debouncer, receiver))
 }
+
+// TODO:
+// for some reason, tests fail when all package tests are run
+// but pass when just this module is run
+// lol??
 #[cfg(test)]
 mod tests {
     use notify::Watcher;
