@@ -139,14 +139,16 @@ pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow:
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use crate::reminders::{AllReminders, EditReminder};
 
+    use super::{add_reminder, Reminder};
+    use std::{
+        fs::File,
+        io::{Read, Write},
+    };
+    use tempfile::tempdir;
     #[test]
     fn edit_and_read() {
-        use crate::reminders::{AllReminders, EditReminder};
-
-        use std::{fs::File, io::Write};
-        use tempfile::tempdir;
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
@@ -180,8 +182,6 @@ mod tests {
 
     #[test]
     fn read_all_from_empty_file() {
-        use std::fs::File;
-        use tempfile::tempdir;
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
@@ -190,8 +190,6 @@ mod tests {
     }
     #[test]
     fn read_all_from_one() {
-        use std::{fs::File, io::Write};
-        use tempfile::tempdir;
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
@@ -209,8 +207,6 @@ mod tests {
     }
     #[test]
     fn read_reminder_none() {
-        use std::{fs::File, io::Write};
-        use tempfile::tempdir;
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
@@ -225,10 +221,7 @@ mod tests {
     // TODO:
     // fix this
     #[test]
-    fn add_reminder() {
-        use super::{add_reminder, Reminder};
-        use std::{fs::File, io::Read};
-        use tempfile::tempdir;
+    fn test_add_reminder() {
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
@@ -258,9 +251,6 @@ mod tests {
     /// writes it to a file, performs the deletion, returning what remains in the file.
     /// The output of this function is intended to be used for assertions
     fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> String {
-        use std::fs::File;
-        use std::io::Write;
-        use tempfile::tempdir;
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut test_file = File::create(&test_path).unwrap();
