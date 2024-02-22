@@ -22,18 +22,20 @@ export default function Home() {
 			setReminders(res)
 			console.log(res);
 		}).catch(e => console.log(e));		
+
+		const stopWatching = watch(
+			"/home/kaya/.local/share/remind-me/Config.toml",
+			(event) => {
+				commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
+					setReminders(res)
+					console.log(res);
+				}).catch(e => console.log(e));		
+			},
+			{ recursive: false },
+		);
+
 	}, []);
 
-	const stopWatching = watch(
-		"/home/kaya/.local/share/remind-me/Config.toml",
-		(event) => {
-			commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
-				setReminders(res)
-				console.log(res);
-			}).catch(e => console.log(e));		
-		},
-		{ recursive: false },
-	  );
 
 	const cards = reminders ? reminders.map((reminder, index) => {
 		const minutes = Math.floor(reminder.frequency / 60);
