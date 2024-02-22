@@ -126,6 +126,7 @@ dependencies = [
  "specta",
  "tauri",
  "tauri-build",
+ "tauri-plugin-fs-watch",
  "tauri-specta",
 ]
 
@@ -2239,6 +2240,7 @@ dependencies = [
  "libc",
  "log",
  "mio",
+ "serde",
  "walkdir",
  "windows-sys 0.48.0",
 ]
@@ -2255,6 +2257,18 @@ dependencies = [
  "notify",
  "parking_lot",
  "walkdir",
+]
+
+[[package]]
+name = "notify-debouncer-mini"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d40b221972a1fc5ef4d858a2f671fb34c75983eb385463dff3780eeff6a9d43"
+dependencies = [
+ "crossbeam-channel",
+ "log",
+ "notify",
+ "serde",
 ]
 
 [[package]]
@@ -3639,6 +3653,20 @@ dependencies = [
  "syn 1.0.109",
  "tauri-codegen",
  "tauri-utils",
+]
+
+[[package]]
+name = "tauri-plugin-fs-watch"
+version = "0.0.0"
+source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v1#58176114f98c977e3435aba3aa910b61115a394e"
+dependencies = [
+ "log",
+ "notify",
+ "notify-debouncer-mini",
+ "serde",
+ "serde_json",
+ "tauri",
+ "thiserror",
 ]
 
 [[package]]

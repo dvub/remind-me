@@ -14,6 +14,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useEffect, useState } from 'react';
 import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
+import { watch } from 'tauri-plugin-fs-watch-api';
 export default function Home() {
 	const [reminders, setReminders] = useState<Reminder[]>();
 	useEffect(() => {
@@ -22,6 +23,17 @@ export default function Home() {
 			console.log(res);
 		}).catch(e => console.log(e));		
 	}, []);
+
+	const stopWatching = watch(
+		"/home/kaya/.local/share/remind-me/Config.toml",
+		(event) => {
+			commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
+				setReminders(res)
+				console.log(res);
+			}).catch(e => console.log(e));		
+		},
+		{ recursive: false },
+	  );
 
 	const cards = reminders ? reminders.map((reminder, index) => {
 		const minutes = Math.floor(reminder.frequency / 60);
