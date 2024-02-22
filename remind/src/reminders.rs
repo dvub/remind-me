@@ -38,7 +38,7 @@ pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
 
-// #[tauri::command]
+#[tauri::command]
 /// Attempts to read a vector of Reminders from the specified path
 pub fn read_all_reminders(path: &Path) -> anyhow::Result<Vec<Reminder>> {
     // read the target file and parse them into a data structure
