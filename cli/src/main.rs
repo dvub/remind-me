@@ -1,5 +1,5 @@
 use clap::Parser;
-use core::{
+use remind::{
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     get_path,
     reminders::{

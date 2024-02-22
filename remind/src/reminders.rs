@@ -137,8 +137,7 @@ pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow:
     Ok(())
 }
 
-// why test no work :(
-// #[cfg(test)]
+#[cfg(test)]
 mod tests {
     use std::io::Read;
 
@@ -248,7 +247,7 @@ mod tests {
         file_read.read_to_string(&mut string_buffer).unwrap();
         assert_eq!(
             string_buffer,
-            "[[reminder]]\nname = \"Hello. world.\"\ndescription = \"\"\nfrequency = 0\nicon = \"not a real icon\""
+            "[[reminders]]\nname = \"Hello. world.\"\ndescription = \"\"\nfrequency = 0\nicon = \"not a real icon\""
         );
     }
 

@@ -597,9 +597,9 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
- "core",
  "log",
  "notify-rust",
+ "remind",
 ]
 
 [[package]]
@@ -678,26 +678,6 @@ name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "colored",
- "daemonize",
- "directories",
- "futures",
- "log",
- "notify",
- "notify-debouncer-full",
- "notify-rust",
- "serde",
- "sysinfo",
- "tempfile",
- "tokio",
- "toml 0.8.8",
-]
 
 [[package]]
 name = "core-foundation"
@@ -2924,6 +2904,26 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "remind"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+ "daemonize",
+ "directories",
+ "futures",
+ "log",
+ "notify",
+ "notify-debouncer-full",
+ "notify-rust",
+ "serde",
+ "sysinfo",
+ "tempfile",
+ "tokio",
+ "toml 0.8.8",
+]
 
 [[package]]
 name = "rustc-demangle"
