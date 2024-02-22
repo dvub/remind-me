@@ -58,13 +58,13 @@ pub fn get_path() -> anyhow::Result<PathBuf> {
 // this would have taken hours without help
 
 #[tokio::main]
-pub async fn run(file: &Path) -> anyhow::Result<()> {
+pub async fn run(path: PathBuf) -> anyhow::Result<()> {
     let (mut debouncer, mut rx) = gen_watcher_receiver()?;
     debouncer
         .watcher()
-        .watch(file, RecursiveMode::NonRecursive)?;
+        .watch(&path, RecursiveMode::NonRecursive)?;
 
-    let mut reminders = read_all_reminders(file)?;
+    let mut reminders = read_all_reminders(path.clone())?;
     let mut tasks = collect_and_run_tasks(reminders.clone());
     loop {
         // at the moment, we don't care about what the message is
@@ -72,7 +72,7 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
         let _ = rx.recv().await.unwrap();
         // now that we know there's been a change, restart tasks
 
-        let new_reminders = read_all_reminders(file)?;
+        let new_reminders = read_all_reminders(path.clone())?;
 
         let reminders_to_abort: Vec<_> = reminders
             .iter()

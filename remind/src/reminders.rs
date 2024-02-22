@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 /// Struct to represent a reminder.
@@ -59,7 +59,7 @@ impl Serialize for ReadError {
 /// Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
 #[tauri::command]
 #[specta::specta]
-pub fn read_all_reminders<P: AsRef<Path>>(path: P) -> Result<Vec<Reminder>, ReadError> {
+pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, ReadError> {
     // read the target file and parse them into a data structure
     println!("reading configuration file for reminders...");
     let toml_str = fs::read_to_string(path)?;
@@ -219,7 +219,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
-        let result = super::read_all_reminders(&test_path).unwrap();
+        let result = super::read_all_reminders(test_path).unwrap();
         assert_eq!(result.len(), 0);
     }
     #[test]

@@ -11,7 +11,7 @@ declare global {
 const invoke = () => window.__TAURI_INVOKE__;
 
 /**
- * Attempts to read a vector of Reminders from the specified path
+ * Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
  */
 export function readAllReminders(path: string) {
     return invoke()<Reminder[]>("read_all_reminders", { path })

@@ -17,7 +17,7 @@ import { Reminder } from '@/src/bindings';
 export default function Home() {
 	const [r, setR] = useState();
 	useEffect(() => {
-		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => console.log(res));		
+		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => console.log(res)).catch(e => console.log(e));		
 	})
 
 	const reminders = [

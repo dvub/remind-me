@@ -46,7 +46,7 @@ fn main() -> anyhow::Result<()> {
                         }
                     }
                 } else {
-                    run(&path)?;
+                    run(path)?;
                 }
             }
             ControlCommands::Stop => {
@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
             }
             RemindersCommands::List => {
                 println!("Printing all current reminders...");
-                let all = read_all_reminders(&path)?;
+                let all = read_all_reminders(path)?;
                 for (index, reminder) in all.iter().enumerate() {
                     println!();
                     println!("{}. {}", index + 1, reminder.name);

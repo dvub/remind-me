@@ -21,7 +21,7 @@ pub mod control {
         let daemon = configure_daemon(&dir)?;
         match daemon.start() {
             Ok(_) => {
-                run(&path)?;
+                run(path)?;
             }
             Err(e) => eprintln!("there was an error starting the daemon: {e}"),
         }
