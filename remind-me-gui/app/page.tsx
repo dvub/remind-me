@@ -10,8 +10,16 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-
+import { invoke } from '@tauri-apps/api/tauri';
+import { useEffect, useState } from 'react';
+import * as commands from '@/src/bindings';
+import { Reminder } from '@/src/bindings';
 export default function Home() {
+	const [r, setR] = useState();
+	useEffect(() => {
+		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => console.log(res));		
+	})
+
 	const reminders = [
 		{
 			title: 'Stretch',

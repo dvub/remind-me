@@ -20,7 +20,8 @@ tempfile = "3.9.0"
 sysinfo = "0.30.5"
 directories = "5.0.1"
 
-
+tauri-specta = { version = "1.0.2", features = ["javascript", "typescript"] }
+specta = "1.0.5"
 tauri = { version = "1.5.4", features = [] }
 
 # necessary..?

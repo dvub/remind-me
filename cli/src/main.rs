@@ -64,6 +64,9 @@ fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Reminders { action } => match action {
+            RemindersCommands::Path => {
+                println!("{}", path.display());
+            }
             RemindersCommands::List => {
                 println!("Printing all current reminders...");
                 let all = read_all_reminders(&path)?;

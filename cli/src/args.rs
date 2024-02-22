@@ -56,6 +56,7 @@ pub enum RemindersCommands {
         name: String,
     },
     List,
+    Path,
 }
 
 #[derive(Subcommand)]

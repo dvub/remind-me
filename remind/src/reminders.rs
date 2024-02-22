@@ -4,8 +4,9 @@ use std::{
     io::Write,
     path::Path,
 };
+
 /// Struct to represent a reminder.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, specta::Type)]
 pub struct Reminder {
     pub name: String,
     pub description: String,
@@ -38,9 +39,27 @@ pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ReadError {
+    #[error("Help")]
+    IoError(#[from] std::io::Error),
+    #[error("asd")]
+    Other(#[from] toml::de::Error),
+}
+
+impl Serialize for ReadError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
+}
+
+/// Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
 #[tauri::command]
-/// Attempts to read a vector of Reminders from the specified path
-pub fn read_all_reminders(path: &Path) -> anyhow::Result<Vec<Reminder>> {
+#[specta::specta]
+pub fn read_all_reminders<P: AsRef<Path>>(path: P) -> Result<Vec<Reminder>, ReadError> {
     // read the target file and parse them into a data structure
     println!("reading configuration file for reminders...");
     let toml_str = fs::read_to_string(path)?;
