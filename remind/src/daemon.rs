@@ -1,9 +1,6 @@
 use daemonize::Daemonize;
 use std::fs::File;
 use std::path::Path;
-// thank you kyillingene
-// for helping me learn about async rust programming
-// this would have taken hours without help
 
 // TODO:
 // testing

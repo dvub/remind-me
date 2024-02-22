@@ -4,6 +4,9 @@ use tokio::{task::JoinHandle, time::sleep};
 
 use crate::{get_hashes, reminders::Reminder};
 
+/// Takes a `Vec<Reminder>` and spawns a task to run each Reminder.
+/// returns a `Vec` of tuples of handles to the spawned tasks and hashes of each Reminder
+/// (so that it can be determined which handles to abort, etc.)
 pub fn collect_and_run_tasks(
     reminders: Vec<Reminder>,
 ) -> Vec<(JoinHandle<anyhow::Result<()>>, u64)> {
@@ -24,7 +27,7 @@ pub fn collect_and_run_tasks(
         .collect()
 }
 
-/// Sends a desktop notification on the interval specified by `reminder`
+/// Sends a desktop notification on the interval specified by `Reminder`
 pub async fn start_reminder_task(reminder: Reminder) -> anyhow::Result<()> {
     println!("starting a new reminder: {}", &reminder.name);
     loop {

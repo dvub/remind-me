@@ -18,8 +18,8 @@ pub mod task;
 pub mod watcher;
 // TODO: fix error propagation/handling in general
 // its a shitshow right now
-// TODO: more documentation
-// TODO: testing
+// TODO: more documentation - in progress
+// TODO: testing - huge improvements - in progress
 
 // fix pathbuf
 pub fn get_dir() -> anyhow::Result<PathBuf> {
@@ -52,6 +52,10 @@ pub fn get_path() -> anyhow::Result<PathBuf> {
 // source: https://stackoverflow.com/questions/76042987/having-problem-in-rust-with-tokio-and-daemonize-how-to-get-them-to-work-togethe
 // instead, this function contains all the program logic
 // and is marked as tokio's entry point
+
+// thank you kyillingene
+// for helping me learn about async rust programming
+// this would have taken hours without help
 
 #[tokio::main]
 pub async fn run(file: &Path) -> anyhow::Result<()> {
@@ -105,6 +109,7 @@ pub async fn run(file: &Path) -> anyhow::Result<()> {
     }
 }
 
+/// Hashes a vec of reminders. (this was abstracted as such for consistency)
 pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
     reminders
         .iter()

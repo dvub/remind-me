@@ -10,7 +10,7 @@ use tokio::sync::mpsc::{channel, Receiver};
 
 ///
 /// Generates and returns a tuplet of a file watcher a receiver.
-/// The watcher must be configured outside of this function to watch a file.
+/// The watcher must be configured outside of this function to watch a file to keep it in scope and running.
 /// The receiver will receive a message anytime the target file is modified.
 ///
 pub fn gen_watcher_receiver() -> anyhow::Result<(

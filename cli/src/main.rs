@@ -68,10 +68,10 @@ fn main() -> anyhow::Result<()> {
                 println!("Printing all current reminders...");
                 let all = read_all_reminders(&path)?;
                 for (index, reminder) in all.iter().enumerate() {
+                    println!();
                     println!("{}. {}", index + 1, reminder.name);
                     println!("Description: {}", reminder.description);
                     println!("Frequency: {} seconds", reminder.frequency);
-                    println!();
                 }
             }
             RemindersCommands::Add {
@@ -86,7 +86,9 @@ fn main() -> anyhow::Result<()> {
                     frequency,
                     icon,
                 };
+                println!("Adding a reminder...");
                 add_reminder(&path, reminder)?;
+                println!("sucessfully added a new reminder.");
             }
             RemindersCommands::Update {
                 name,
@@ -101,9 +103,30 @@ fn main() -> anyhow::Result<()> {
                     frequency,
                     icon,
                 };
-                edit_reminder(&path, &name, new_data)?;
+                let res = edit_reminder(&path, &name, new_data)?;
+                match res {
+                    0 => {
+                        println!("didn't find a reminder with that name. Nothing was changed");
+                    }
+                    n => {
+                        println!("Modified {n} reminder(s)");
+                    }
+                }
             }
-            RemindersCommands::Delete { name } => delete_reminder(&path, &name)?,
+            // TODO:
+            // confirmation
+            RemindersCommands::Delete { name } => {
+                println!("Deleting reminder {}", name);
+                let res = delete_reminder(&path, &name)?;
+                match res {
+                    0 => {
+                        println!("didn't find a reminder with that name. Nothing was deleted");
+                    }
+                    n => {
+                        println!("Deleted {n} reminder(s)");
+                    }
+                }
+            }
         },
     }
     Ok(())
