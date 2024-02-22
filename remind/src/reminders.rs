@@ -4,6 +4,7 @@ use std::{
     io::Write,
     path::Path,
 };
+/// Struct to represent a reminder.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct Reminder {
     pub name: String,
@@ -30,10 +31,8 @@ pub struct EditReminder {
     pub icon: Option<String>,
 }
 
-// this struct may be used for any other configuration
-// if needed in the future
-
-/// Wrapper struct
+/// Wrapper struct containing a `Vec` of `Reminder`s.
+/// This struct may also be used to store additional app data from the TOML file.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AllReminders {
     pub reminders: Vec<Reminder>,
@@ -87,25 +86,34 @@ pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
 }
 
 /// Attempts to remove a reminder from the toml file at the specified path by name.
-pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<()> {
+/// Returns a Result containing the number of deletions made. i.e. 0 means nothing was deleted.
+/// Currently, _multiple deletions may work_ but haven't been tested.
+pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<usize> {
     let toml_content = fs::read_to_string(path)?;
     // i luv turbofish syntax
     let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+    let init_length = reminders.len();
+
     // modify
     reminders.retain(|r| r.name != name);
-    // if empty dont bother
-    // TODO:
-    // rework this
-    if reminders.is_empty() {
+
+    let final_length = reminders.len();
+    let num_changes = init_length - final_length;
+    // this is a super weird workaround
+    // if there are no reminders and without this, it would write:
+    // "reminders = []"
+    // which is not what i want at all
+    if final_length == 0 {
         fs::write(path, "")?;
-        return Ok(());
+        return Ok(num_changes);
     }
+    // println!("{num_changes}");
 
     // we need to make use of our wrapper struct
     let ar = AllReminders { reminders };
     let modified_toml = toml::to_string(&ar)?;
     fs::write(path, modified_toml)?;
-    Ok(())
+    Ok(num_changes)
 }
 
 pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>> {
@@ -115,7 +123,10 @@ pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>
     Ok(reminders.iter().find(|r| r.name == name).cloned())
 }
 
-pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow::Result<()> {
+/// Attempts to modify an existing `Reminder` by name with an `EditReminder`.
+/// Returns a result containing the number of changes, i.e. 0 means no edits were made.
+/// Currently multiple edits are not implemented nor tested.
+pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow::Result<usize> {
     let toml_content = fs::read_to_string(path)?;
     let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
     let index = reminders.iter().position(|r| r.name == name);
@@ -131,11 +142,13 @@ pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow:
         }
         // since the icon is already optional we don't need to check for Some
         reminders[idx].icon = new_data.icon;
+        let ar = AllReminders { reminders };
+        let modified_toml = toml::to_string(&ar)?;
+        fs::write(path, modified_toml)?;
+        Ok(1)
+    } else {
+        Ok(0)
     }
-    let ar = AllReminders { reminders };
-    let modified_toml = toml::to_string(&ar)?;
-    fs::write(path, modified_toml)?;
-    Ok(())
 }
 
 #[cfg(test)]
@@ -157,7 +170,7 @@ mod tests {
         f.write_all(b"[[reminders]]\nname = \"Find me!\"\ndescription = \"...\"\nfrequency = 0\n[[reminders]]\nname = \"Dont find me\"\ndescription = \"You found me...\"\nfrequency = 1")
             .unwrap();
 
-        super::edit_reminder(
+        let res = super::edit_reminder(
             &test_path,
             "Find me!",
             EditReminder {
@@ -174,6 +187,7 @@ mod tests {
             .unwrap()
             .reminders;
 
+        assert_eq!(res, 1);
         assert_eq!(reminders.len(), 2);
         assert_eq!(reminders[0].name, "Find me!");
         assert_eq!(reminders[0].description, "New description!");
@@ -251,19 +265,19 @@ mod tests {
     /// Testing wrapper function that takes a string of TOML and a reminder name,
     /// writes it to a file, performs the deletion, returning what remains in the file.
     /// The output of this function is intended to be used for assertions
-    fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> String {
+    fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> (String, usize) {
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut test_file = File::create(&test_path).unwrap();
         test_file.write_all(reminder_str.as_bytes()).unwrap();
 
-        super::delete_reminder(&test_path, name).unwrap();
+        let res = super::delete_reminder(&test_path, name).unwrap();
 
         let mut f = File::open(test_path).unwrap();
         let mut str_buffer = String::new();
         f.read_to_string(&mut str_buffer).unwrap();
 
-        str_buffer
+        (str_buffer, res)
     }
 
     #[test]
@@ -271,8 +285,9 @@ mod tests {
         let one_reminder =
             "[[reminders]]\nname = \"Dont get deleted\"\ndescription = \"...\"\nfrequency = 0";
 
-        let output = delete_reminder_read_remaining(one_reminder, "I dont know the name");
+        let (output, n) = delete_reminder_read_remaining(one_reminder, "I dont know the name");
         // the buffer string containing the file output should contain exactly the input
+        assert_eq!(n, 0);
         assert_eq!(output.trim(), one_reminder);
     }
     #[test]
@@ -283,8 +298,9 @@ mod tests {
         frequency = 0
         icon = \"dont panic\"
         ";
-        let output = delete_reminder_read_remaining(one_reminder, "Hello, world!");
-        // println!("{str_buffer}");
+        let (output, n) = delete_reminder_read_remaining(one_reminder, "Hello, world!");
+        println!("{output}");
+        assert_eq!(n, 1);
         assert!(output.is_empty());
     }
     #[test]
@@ -294,8 +310,9 @@ mod tests {
             "[[reminders]]\nname = \"Hello, world!\"\ndescription = \"...\"\nfrequency = 0\nicon = \"dont panic\"\n{}",
             to_keep
         );
-        let output = delete_reminder_read_remaining(&reminders_str, "Hello, world!");
+        let (output, n) = delete_reminder_read_remaining(&reminders_str, "Hello, world!");
         // println!("{str_buffer}");
+        assert_eq!(n, 1);
         assert_eq!(output.trim(), to_keep);
     }
 }
