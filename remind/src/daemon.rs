@@ -7,7 +7,7 @@ use std::path::Path;
 // unify project dir instead of calling it in individual files
 
 pub mod control {
-    use crate::{get_dir, get_path, run};
+    use crate::{commands::get_path, get_dir, run};
 
     use super::configure_daemon;
     use std::{fs::File, io::Read, str::FromStr};

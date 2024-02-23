@@ -1,7 +1,7 @@
 use clap::Parser;
 use remind::{
+    commands::get_path,
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
-    get_path,
     reminders::{
         add_reminder, delete_reminder, edit_reminder, read_all_reminders, EditReminder, Reminder,
     },

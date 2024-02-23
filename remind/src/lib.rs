@@ -5,10 +5,8 @@ use notify::{RecursiveMode, Watcher};
 use reminders::Reminder;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::{
-    fs::{create_dir, File},
-    path::PathBuf,
-};
+use std::io;
+use std::{fs::create_dir, path::PathBuf};
 
 use directories::ProjectDirs;
 
@@ -22,7 +20,7 @@ pub mod watcher;
 // TODO: testing - huge improvements - in progress
 
 // fix pathbuf
-pub fn get_dir() -> anyhow::Result<PathBuf> {
+pub fn get_dir() -> Result<PathBuf, io::Error> {
     // TODO:
     // fix this unwrap since its on an Option
     let project_dir = ProjectDirs::from("com", "dvub", "remind-me").unwrap();
@@ -34,16 +32,24 @@ pub fn get_dir() -> anyhow::Result<PathBuf> {
     Ok(data_dir.to_path_buf())
 }
 
-// call it db??
-pub fn get_path() -> anyhow::Result<PathBuf> {
-    let data_dir = get_dir()?;
+pub mod commands {
+    use std::{fs::File, io, path::PathBuf};
 
-    let path = data_dir.join("Config.toml");
-    if !path.exists() {
-        println!("didn't find an existing toml file, creating an empty one...");
-        File::create(&path)?;
+    use crate::get_dir;
+
+    #[tauri::command]
+    #[specta::specta]
+    // call it db??
+    pub fn get_path() -> Result<PathBuf, io::Error> {
+        let data_dir = get_dir()?;
+
+        let path = data_dir.join("Config.toml");
+        if !path.exists() {
+            println!("didn't find an existing toml file, creating an empty one...");
+            File::create(&path)?;
+        }
+        Ok(path)
     }
-    Ok(path)
 }
 
 // important note:
