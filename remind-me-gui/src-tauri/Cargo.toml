@@ -18,12 +18,13 @@ tauri-build = { version = "1.5.1", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.5.4", features = [] }
-
-remind = { path = "../../remind" }
 tauri-specta = { version = "1.0.2", features = ["javascript", "typescript"] }
 specta = "1.0.5"
 
+remind = { path = "../../remind" }
 
+# tauri plugins
+tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-fs-watch = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 
 [features]
