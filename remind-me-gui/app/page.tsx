@@ -16,24 +16,36 @@ import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
 import { watch } from 'tauri-plugin-fs-watch-api';
 export default function Home() {
+	const [path, setPath] = useState<string>('');
 	const [reminders, setReminders] = useState<Reminder[]>();
 	useEffect(() => {
-		commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
-			setReminders(res)
-			console.log(res);
-		}).catch(e => console.log(e));		
+		commands.getPath().then(res => {
+			setPath(res);
+			updateReminders(res);
+			console.log("Current path:", res);
+		}).catch(e => console.log("There was an error getting the path!"));	
+
+		// 
+		const updateReminders = (path: string) => {
+			commands.readAllReminders(path).then(res => {
+				setReminders(res)
+				console.log("Reminders:", res);
+			}).catch(e => console.log("There was an error fetching reminders:", e));	
+		}
 
 		const stopWatching = watch(
 			"/home/kaya/.local/share/remind-me/Config.toml",
 			(event) => {
-				commands.readAllReminders('/home/kaya/.local/share/remind-me/Config.toml').then(res => {
-					setReminders(res)
-					console.log(res);
-				}).catch(e => console.log(e));		
+				// TODO:
+				updateReminders(path);
 			},
 			{ recursive: false },
 		);
 
+
+
+		// TODO:
+		// needs return here?
 	}, []);
 
 

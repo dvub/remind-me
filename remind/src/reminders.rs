@@ -5,6 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::CommandError;
+
 /// Struct to represent a reminder.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, specta::Type)]
 pub struct Reminder {
@@ -39,27 +41,10 @@ pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ReadError {
-    #[error("Help")]
-    IoError(#[from] std::io::Error),
-    #[error("asd")]
-    Other(#[from] toml::de::Error),
-}
-
-impl Serialize for ReadError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_ref())
-    }
-}
-
 /// Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
 #[tauri::command]
 #[specta::specta]
-pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, ReadError> {
+pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, CommandError> {
     // read the target file and parse them into a data structure
     println!("reading configuration file for reminders...");
     let toml_str = fs::read_to_string(path)?;

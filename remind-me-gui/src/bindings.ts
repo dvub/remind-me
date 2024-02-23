@@ -17,6 +17,10 @@ export function readAllReminders(path: string) {
     return invoke()<Reminder[]>("read_all_reminders", { path })
 }
 
+export function getPath() {
+    return invoke()<string>("get_path")
+}
+
 /**
  * Struct to represent a reminder.
  */
