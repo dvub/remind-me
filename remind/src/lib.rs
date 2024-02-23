@@ -21,12 +21,14 @@ pub mod watcher;
 // TODO: more documentation - in progress
 // TODO: testing - huge improvements - in progress
 
+/// This struct uses `thiserror` to wrap all of the possible errors that Tauri commands can return.
+/// This struct implements `Serialize` so that these errors can be sent to the frontend.
 #[derive(Debug, thiserror::Error)]
 pub enum CommandError {
-    #[error("Help")]
+    #[error("There was an IO Error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("asd")]
-    Other(#[from] toml::de::Error),
+    #[error("There was an error deserializing some data (probably in the TOML file): {0}")]
+    DeserializationError(#[from] toml::de::Error),
 }
 
 impl Serialize for CommandError {
@@ -38,6 +40,9 @@ impl Serialize for CommandError {
     }
 }
 
+// TODO: rename or fix
+// right now this is a rather silly wrapper
+// necessary because you can't have pub fns in lib/main marked with #[tauri::comand]
 pub mod commands {
     use std::{fs::File, path::PathBuf};
 
