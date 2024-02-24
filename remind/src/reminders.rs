@@ -51,7 +51,7 @@ pub mod commands {
     #[specta::specta]
     pub fn edit_reminder(
         path: PathBuf,
-        name: String,
+        name: &str,
         new_data: EditReminder,
     ) -> Result<i32, CommandError> {
         let toml_content = fs::read_to_string(&path)?;
@@ -93,6 +93,38 @@ pub mod commands {
         let reminders = res.reminders;
         Ok(reminders)
     }
+    /// Attempts to remove a reminder from the toml file at the specified path by name.
+    /// Returns a Result containing the number of deletions made. i.e. 0 means nothing was deleted.
+    /// Currently, _multiple deletions **may** work_ but haven't been tested.
+    #[tauri::command]
+    #[specta::specta]
+    pub fn delete_reminder(path: PathBuf, name: &str) -> Result<i32, CommandError> {
+        let toml_content = fs::read_to_string(&path)?;
+        // i luv turbofish syntax
+        let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+        let init_length = reminders.len() as i32;
+
+        // modify
+        reminders.retain(|r| r.name != name);
+
+        let final_length = reminders.len() as i32;
+        let num_changes = init_length - final_length;
+        // this is a super weird workaround
+        // if there are no reminders and without this, it would write:
+        // "reminders = []"
+        // which is not what i want at all
+        if final_length == 0 {
+            fs::write(path, "")?;
+            return Ok(num_changes);
+        }
+        // println!("{num_changes}");
+
+        // we need to make use of our wrapper struct
+        let ar = AllReminders { reminders };
+        let modified_toml = toml::to_string(&ar)?;
+        fs::write(path, modified_toml)?;
+        Ok(num_changes)
+    }
 }
 
 // TODO:
@@ -124,37 +156,6 @@ pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Attempts to remove a reminder from the toml file at the specified path by name.
-/// Returns a Result containing the number of deletions made. i.e. 0 means nothing was deleted.
-/// Currently, _multiple deletions may work_ but haven't been tested.
-pub fn delete_reminder(path: &Path, name: &str) -> anyhow::Result<usize> {
-    let toml_content = fs::read_to_string(path)?;
-    // i luv turbofish syntax
-    let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
-    let init_length = reminders.len();
-
-    // modify
-    reminders.retain(|r| r.name != name);
-
-    let final_length = reminders.len();
-    let num_changes = init_length - final_length;
-    // this is a super weird workaround
-    // if there are no reminders and without this, it would write:
-    // "reminders = []"
-    // which is not what i want at all
-    if final_length == 0 {
-        fs::write(path, "")?;
-        return Ok(num_changes);
-    }
-    // println!("{num_changes}");
-
-    // we need to make use of our wrapper struct
-    let ar = AllReminders { reminders };
-    let modified_toml = toml::to_string(&ar)?;
-    fs::write(path, modified_toml)?;
-    Ok(num_changes)
-}
-
 pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>> {
     let toml_content = fs::read_to_string(path)?;
     let reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
@@ -183,7 +184,7 @@ mod tests {
 
         let res = super::commands::edit_reminder(
             test_path.clone(),
-            "Find me!".to_string(),
+            "Find me!",
             EditReminder {
                 name: None,
                 description: Some(String::from("New description!")),
@@ -276,13 +277,13 @@ mod tests {
     /// Testing wrapper function that takes a string of TOML and a reminder name,
     /// writes it to a file, performs the deletion, returning what remains in the file.
     /// The output of this function is intended to be used for assertions
-    fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> (String, usize) {
+    fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> (String, i32) {
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut test_file = File::create(&test_path).unwrap();
         test_file.write_all(reminder_str.as_bytes()).unwrap();
 
-        let res = super::delete_reminder(&test_path, name).unwrap();
+        let res = super::commands::delete_reminder(test_path.clone(), name).unwrap();
 
         let mut f = File::open(test_path).unwrap();
         let mut str_buffer = String::new();

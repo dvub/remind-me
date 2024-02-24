@@ -7,7 +7,7 @@ use tauri_plugin_autostart::MacosLauncher;
 fn main() {
     #[cfg(debug_assertions)]
     tauri_specta::ts::export(
-        collect_types![read_all_reminders, get_path, edit_reminder],
+        collect_types![read_all_reminders, get_path, edit_reminder, delete_reminder],
         "../src/bindings.ts",
     )
     .unwrap();
@@ -15,7 +15,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             read_all_reminders,
             get_path,
-            edit_reminder
+            edit_reminder,
+            delete_reminder
         ])
         .plugin(tauri_plugin_fs_watch::init())
         .plugin(tauri_plugin_autostart::init(

@@ -71,7 +71,17 @@ export default function Home() {
 				</div>
 				<Config />
 			</div>
-			<div>{cards}</div>
+			{reminders && (
+				<div>
+					{reminders.length > 0 && <div>{cards}</div>}
+					{reminders.length === 0 && (
+						<div className='w-full text-center text-black/50'>
+							<p>No reminders found... </p>
+						</div>
+					)}
+				</div>
+			)}
+			{!reminders && <p>Loading</p>}
 		</main>
 	);
 }

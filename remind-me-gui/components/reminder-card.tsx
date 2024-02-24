@@ -6,10 +6,18 @@ import {
 	CardTitle,
 	CardDescription,
 	CardContent,
+	CardFooter,
 } from './ui/card';
+import { TrashIcon } from '@radix-ui/react-icons';
+import { Button } from './ui/button';
+import { Trash } from 'lucide-react';
+import DeleteReminderDialog from './delete-reminder-dialog';
 
-export default function ReminderCard(props: { reminder: Reminder, path: string }) {
-	const {reminder, path } = props;
+export default function ReminderCard(props: {
+	reminder: Reminder;
+	path: string;
+}) {
+	const { reminder, path } = props;
 	const minutes = Math.floor(reminder.frequency / 60);
 	const seconds = reminder.frequency % 60;
 
@@ -23,7 +31,7 @@ export default function ReminderCard(props: { reminder: Reminder, path: string }
 							{reminder.description}
 						</CardDescription>
 					</div>
-					<EditReminderDialog reminder={reminder} path={path}/>
+					<EditReminderDialog reminder={reminder} path={path} />
 				</div>
 			</CardHeader>
 			<CardContent>
@@ -37,6 +45,11 @@ export default function ReminderCard(props: { reminder: Reminder, path: string }
 					</p>
 				</div>
 			</CardContent>
+			<CardFooter>
+				<div className=''>
+					<DeleteReminderDialog path={path} name={reminder.name} />
+				</div>
+			</CardFooter>
 		</Card>
 	);
 }

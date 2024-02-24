@@ -4,8 +4,8 @@ use remind::{
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     reminders::{
         add_reminder,
-        commands::{edit_reminder, read_all_reminders},
-        delete_reminder, EditReminder, Reminder,
+        commands::{delete_reminder, edit_reminder, read_all_reminders},
+        EditReminder, Reminder,
     },
     run,
 };
@@ -108,7 +108,7 @@ fn main() -> anyhow::Result<()> {
                     frequency,
                     icon,
                 };
-                let res = edit_reminder(path.clone(), name, new_data)?;
+                let res = edit_reminder(path.clone(), &name, new_data)?;
                 match res {
                     0 => {
                         println!("didn't find a reminder with that name. Nothing was changed");
@@ -122,7 +122,7 @@ fn main() -> anyhow::Result<()> {
             // confirmation
             RemindersCommands::Delete { name } => {
                 println!("Deleting reminder {}", name);
-                let res = delete_reminder(&path, &name)?;
+                let res = delete_reminder(path, &name)?;
                 match res {
                     0 => {
                         println!("didn't find a reminder with that name. Nothing was deleted");

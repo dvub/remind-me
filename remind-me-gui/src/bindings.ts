@@ -30,6 +30,15 @@ export function editReminder(path: string, name: string, newData: EditReminder) 
     return invoke()<number>("edit_reminder", { path,name,newData })
 }
 
+/**
+ * Attempts to remove a reminder from the toml file at the specified path by name.
+ * Returns a Result containing the number of deletions made. i.e. 0 means nothing was deleted.
+ * Currently, _multiple deletions **may** work_ but haven't been tested.
+ */
+export function deleteReminder(path: string, name: string) {
+    return invoke()<number>("delete_reminder", { path,name })
+}
+
 export type EditReminder = { name: string | null; description: string | null; frequency: number | null; icon: string | null }
 /**
  * Struct to represent a reminder.
