@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::{
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
+use std::{fs, path::Path};
 /// Struct to represent a reminder.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, Type)]
 pub struct Reminder {
@@ -42,7 +38,11 @@ pub struct AllReminders {
 pub mod commands {
     use super::{AllReminders, EditReminder, Reminder};
     use crate::CommandError;
-    use std::{fs, path::PathBuf};
+    use std::{
+        fs::{self, File},
+        io::Write,
+        path::PathBuf,
+    };
 
     /// Attempts to modify an existing `Reminder` by name with an `EditReminder`.
     /// Returns a result containing the number of changes, i.e. 0 means no edits were made.
@@ -125,35 +125,37 @@ pub mod commands {
         fs::write(path, modified_toml)?;
         Ok(num_changes)
     }
-}
 
-// TODO:
-// make sure its a toml file/dont just directly write (ser/deser first)
-// unify create/delete functions to use the same method
-// this might be unnecessary
-// does reminder param need to be &?
+    // TODO:
+    // make sure its a toml file/dont just directly write (ser/deser first)
+    // unify create/delete functions to use the same method
+    // this might be unnecessary
+    // does reminder param need to be &?
 
-/// Attempts to add a reminder to the specified path by writing directly to the file.
-pub fn add_reminder(path: &Path, reminder: Reminder) -> anyhow::Result<()> {
-    // TODO: improve this
-    let icon_str = {
-        if let Some(icon) = reminder.icon {
-            format!("icon = \"{}\"", icon)
-        } else {
-            String::new()
-        }
-    };
+    /// Attempts to add a reminder to the specified path by writing directly to the file.
+    #[tauri::command]
+    #[specta::specta]
+    pub fn add_reminder(path: PathBuf, reminder: Reminder) -> Result<(), CommandError> {
+        // TODO: improve this
+        let icon_str = {
+            if let Some(icon) = reminder.icon {
+                format!("icon = \"{}\"", icon)
+            } else {
+                String::new()
+            }
+        };
 
-    let toml_str = format!(
-        "[[reminders]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
-        reminder.name,
-        reminder.description,
-        reminder.frequency,
-        icon_str // reminder.icon.unwrap_or_default()
-    );
-    let mut file = File::options().append(true).open(path)?;
-    file.write_all(toml_str.as_bytes())?;
-    Ok(())
+        let toml_str = format!(
+            "[[reminders]]\nname = \"{}\"\ndescription = \"{}\"\nfrequency = {}\n{}",
+            reminder.name,
+            reminder.description,
+            reminder.frequency,
+            icon_str // reminder.icon.unwrap_or_default()
+        );
+        let mut file = File::options().append(true).open(path)?;
+        file.write_all(toml_str.as_bytes())?;
+        Ok(())
+    }
 }
 
 pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>> {
@@ -167,7 +169,7 @@ pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>
 mod tests {
     use crate::reminders::{AllReminders, EditReminder};
 
-    use super::{add_reminder, Reminder};
+    use super::{commands::add_reminder, Reminder};
     use std::{
         fs::File,
         io::{Read, Write},
@@ -260,7 +262,7 @@ mod tests {
             0,
             Some("not a real icon".to_owned()),
         );
-        add_reminder(&test_path, reminder).unwrap();
+        add_reminder(test_path.clone(), reminder).unwrap();
         // man wtf.
         let mut file_read = File::open(&test_path).unwrap();
         let mut string_buffer = String::new();

@@ -39,6 +39,13 @@ export function deleteReminder(path: string, name: string) {
     return invoke()<number>("delete_reminder", { path,name })
 }
 
+/**
+ * Attempts to add a reminder to the specified path by writing directly to the file.
+ */
+export function addReminder(path: string, reminder: Reminder) {
+    return invoke()<null>("add_reminder", { path,reminder })
+}
+
 export type EditReminder = { name: string | null; description: string | null; frequency: number | null; icon: string | null }
 /**
  * Struct to represent a reminder.

@@ -3,8 +3,7 @@ use remind::{
     commands::get_path,
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     reminders::{
-        add_reminder,
-        commands::{delete_reminder, edit_reminder, read_all_reminders},
+        commands::{add_reminder, delete_reminder, edit_reminder, read_all_reminders},
         EditReminder, Reminder,
     },
     run,
@@ -92,7 +91,7 @@ fn main() -> anyhow::Result<()> {
                     icon,
                 };
                 println!("Adding a reminder...");
-                add_reminder(&path, reminder)?;
+                add_reminder(path, reminder)?;
                 println!("sucessfully added a new reminder.");
             }
             RemindersCommands::Update {

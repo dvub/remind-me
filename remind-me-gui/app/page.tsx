@@ -6,6 +6,7 @@ import { Reminder } from '@/src/bindings';
 import { watch } from 'tauri-plugin-fs-watch-api';
 import ReminderCard from '@/components/reminder-card';
 import Config from '@/components/config';
+import AddReminderDialog from '@/components/add-reminder-dialog';
 
 export default function Home() {
 	// console.log("Is autostarting?", isEnabled());
@@ -67,7 +68,7 @@ export default function Home() {
 					{/* TODO: randomize subheader! would be a fun detail :) */}
 					<h2 className='mb-5 text-xl'>Welcome back!</h2>
 					{/* <p>Your current reminders:</p> */}
-					<Button variant='default'>New Reminder</Button>
+					<AddReminderDialog path={path} />
 				</div>
 				<Config />
 			</div>
