@@ -17,12 +17,22 @@ import {
 import { DialogClose } from './ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as commands from '@/src/bindings';
-const formSchema = z.object({
-	name: z.string().optional(),
-	description: z.string().optional(),
-	frequency: z.number().optional(),
-	icon: z.string().optional(),
-});
+const formSchema = z
+	.object({
+		name: z.string().optional(),
+		description: z.string().optional(),
+		frequency: z.coerce
+			.number()
+			.finite()
+			.positive()
+			.int()
+			.safe()
+			.optional(),
+		icon: z.string().optional(),
+	})
+	.refine((data) => Object.values(data).some((v) => v !== undefined), {
+		message: 'You must make at least one change. ',
+	});
 
 export default function EditReminderForm(props: {
 	path: string;
@@ -38,6 +48,7 @@ export default function EditReminderForm(props: {
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Submitting!!', values);
 		commands.editReminder(path, name, values as commands.EditReminder);
+		form.reset();
 	}
 
 	return (
@@ -113,9 +124,12 @@ export default function EditReminderForm(props: {
 						</FormItem>
 					)}
 				/>
-				<DialogClose>
-					<Button type='submit'>Submit</Button>
-				</DialogClose>
+				<div className='flex w-full justify-between'>
+					<Button type='submit'>Edit</Button>
+					<DialogClose>
+						<Button variant='default'>Close</Button>
+					</DialogClose>
+				</div>
 			</form>
 		</Form>
 	);

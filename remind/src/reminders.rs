@@ -91,8 +91,6 @@ pub mod commands {
         }
         let res: AllReminders = toml::from_str(&toml_str)?;
         let reminders = res.reminders;
-
-        println!("successfully read file into memory...");
         Ok(reminders)
     }
 }

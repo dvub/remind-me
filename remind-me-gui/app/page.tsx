@@ -20,7 +20,7 @@ export default function Home() {
 			updateReminders(path);
 		},
 		// TODO: find the optimal ms
-		{ recursive: false, delayMs: 50 }
+		{ recursive: false, delayMs: 100 }
 	);
 
 	const updateReminders = (path: string) => {
