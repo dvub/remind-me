@@ -22,17 +22,21 @@ const formSchema = z.object({
 	name: z.string(),
 	description: z.string(),
 	frequency: z.coerce.number().finite().positive().int().safe(),
-	icon: z.string().optional(),
+	icon: z
+		.string()
+		.emoji({ message: 'This must be an emoji' })
+		.max(3, {
+			message:
+				'You may only enter a maximum of 3 emojis! (3 is already a lot in my opinion)',
+		})
+		.optional(),
 });
 
 export default function AddReminderForm(props: { path: string }) {
 	const { path } = props;
-	// 1. Define your form.
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 	});
-
-	// 2. Define a submit handler.
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Adding a new reminder...', values);
 		commands.addReminder(path, values as commands.Reminder);
@@ -52,7 +56,7 @@ export default function AddReminderForm(props: { path: string }) {
 							</FormControl>
 							<FormDescription>
 								This will be the name of your reminder. Try to
-								make it short!
+								keep it short and memorable!
 							</FormDescription>
 							<FormMessage />
 						</FormItem>
@@ -89,6 +93,8 @@ export default function AddReminderForm(props: { path: string }) {
 							</FormControl>
 							<FormDescription>
 								How often do you want this reminder to appear?
+								Currently, only entering values in seconds is
+								supported. (i.e. 600 seconds = 10 minutes)
 							</FormDescription>
 							<FormMessage />
 						</FormItem>
@@ -104,17 +110,22 @@ export default function AddReminderForm(props: { path: string }) {
 								<Input placeholder='Icon...' {...field} />
 							</FormControl>
 							<FormDescription>
-								Optionally, add a symbol or emoji that will
-								appear with the reminder!
+								Optionally, add up to 3 emojis that will appear
+								with the reminder! (Currently there is no simple
+								way to input emojis, good luck)
 							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}
 				/>
 				<div className='flex w-full justify-between'>
-					<Button type='submit'>Add</Button>
+					<div>
+						<Button type='submit'>Add</Button>
+					</div>
 					<DialogClose>
-						<Button variant='default'>Close</Button>
+						<Button variant='default' type='button'>
+							Close
+						</Button>
 					</DialogClose>
 				</div>
 			</form>

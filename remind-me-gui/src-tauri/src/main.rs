@@ -1,7 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use remind::{commands::*, reminders::commands::*};
+use std::thread;
+
+use remind::{commands::*, reminders::commands::*, run};
 use specta::collect_types;
 use tauri_plugin_autostart::MacosLauncher;
 fn main() {
@@ -17,6 +19,13 @@ fn main() {
         "../src/bindings.ts",
     )
     .unwrap();
+
+    // TODO:
+    // not thread::spawn LOL
+    thread::spawn(|| {
+        run(get_path().expect("error getting path")).expect("error running backend");
+    });
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             read_all_reminders,

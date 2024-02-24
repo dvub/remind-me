@@ -28,7 +28,14 @@ const formSchema = z
 			.int()
 			.safe()
 			.optional(),
-		icon: z.string().optional(),
+		icon: z
+			.string()
+			.emoji({ message: 'This must be an emoji' })
+			.max(3, {
+				message:
+					'You may only enter a maximum of 3 emojis! (3 is already a lot in my opinion)',
+			})
+			.optional(),
 	})
 	.refine((data) => Object.values(data).some((v) => v !== undefined), {
 		message: 'You must make at least one change. ',
@@ -42,13 +49,18 @@ export default function EditReminderForm(props: {
 	// 1. Define your form.
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
+		defaultValues: {
+			name: undefined,
+			description: undefined,
+			icon: undefined,
+			frequency: undefined,
+		},
 	});
 
 	// 2. Define a submit handler.
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Submitting!!', values);
 		commands.editReminder(path, name, values as commands.EditReminder);
-		form.reset();
 	}
 
 	return (
@@ -63,10 +75,6 @@ export default function EditReminderForm(props: {
 							<FormControl>
 								<Input placeholder='Name...' {...field} />
 							</FormControl>
-							<FormDescription>
-								This will be the name of your reminder. Try to
-								make it short!
-							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}
@@ -83,10 +91,6 @@ export default function EditReminderForm(props: {
 									{...field}
 								/>
 							</FormControl>
-							<FormDescription>
-								Provide some extra information, details, or
-								notes about your reminder!
-							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}
@@ -100,9 +104,6 @@ export default function EditReminderForm(props: {
 							<FormControl>
 								<Input placeholder='Frequency...' {...field} />
 							</FormControl>
-							<FormDescription>
-								How often do you want this reminder to appear?
-							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}
@@ -116,10 +117,6 @@ export default function EditReminderForm(props: {
 							<FormControl>
 								<Input placeholder='Icon...' {...field} />
 							</FormControl>
-							<FormDescription>
-								Optionally, add a symbol or emoji that will
-								appear with the reminder!
-							</FormDescription>
 							<FormMessage />
 						</FormItem>
 					)}
@@ -127,7 +124,9 @@ export default function EditReminderForm(props: {
 				<div className='flex w-full justify-between'>
 					<Button type='submit'>Edit</Button>
 					<DialogClose>
-						<Button variant='default'>Close</Button>
+						<Button variant='default' type='button'>
+							Close
+						</Button>
 					</DialogClose>
 				</div>
 			</form>
