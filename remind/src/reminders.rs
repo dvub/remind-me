@@ -1,14 +1,12 @@
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::{
     fs::{self, File},
     io::Write,
-    path::{Path, PathBuf},
+    path::Path,
 };
-
-use crate::CommandError;
-
 /// Struct to represent a reminder.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, specta::Type)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, Type)]
 pub struct Reminder {
     pub name: String,
     pub description: String,
@@ -27,6 +25,7 @@ impl Reminder {
     }
 }
 
+#[derive(Serialize, Deserialize, Type)]
 pub struct EditReminder {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -40,24 +39,62 @@ pub struct EditReminder {
 pub struct AllReminders {
     pub reminders: Vec<Reminder>,
 }
+pub mod commands {
+    use super::{AllReminders, EditReminder, Reminder};
+    use crate::CommandError;
+    use std::{fs, path::PathBuf};
 
-/// Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
-#[tauri::command]
-#[specta::specta]
-pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, CommandError> {
-    // read the target file and parse them into a data structure
-    println!("reading configuration file for reminders...");
-    let toml_str = fs::read_to_string(path)?;
-    // println!("File content: {:?}", toml_str);
-
-    if toml_str.is_empty() {
-        return Ok(Vec::new());
+    /// Attempts to modify an existing `Reminder` by name with an `EditReminder`.
+    /// Returns a result containing the number of changes, i.e. 0 means no edits were made.
+    /// Currently multiple edits are not implemented nor tested.
+    #[tauri::command]
+    #[specta::specta]
+    pub fn edit_reminder(
+        path: PathBuf,
+        name: String,
+        new_data: EditReminder,
+    ) -> Result<i32, CommandError> {
+        let toml_content = fs::read_to_string(&path)?;
+        let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+        let index = reminders.iter().position(|r| r.name == name);
+        if let Some(idx) = index {
+            if let Some(new_name) = new_data.name {
+                reminders[idx].name = new_name;
+            }
+            if let Some(new_description) = new_data.description {
+                reminders[idx].description = new_description;
+            }
+            if let Some(new_frequency) = new_data.frequency {
+                reminders[idx].frequency = new_frequency;
+            }
+            // since the icon is already optional we don't need to check for Some
+            reminders[idx].icon = new_data.icon;
+            let ar = AllReminders { reminders };
+            let modified_toml = toml::to_string(&ar)?;
+            fs::write(&path, modified_toml)?;
+            Ok(1)
+        } else {
+            Ok(0)
+        }
     }
-    let res: AllReminders = toml::from_str(&toml_str)?;
-    let reminders = res.reminders;
+    /// Attempts to read a vector of Reminders from the specified path. Returns a result containing a Vector of Reminders.
+    #[tauri::command]
+    #[specta::specta]
+    pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, CommandError> {
+        // read the target file and parse them into a data structure
+        println!("reading configuration file for reminders...");
+        let toml_str = fs::read_to_string(path)?;
+        // println!("File content: {:?}", toml_str);
 
-    println!("successfully read file into memory...");
-    Ok(reminders)
+        if toml_str.is_empty() {
+            return Ok(Vec::new());
+        }
+        let res: AllReminders = toml::from_str(&toml_str)?;
+        let reminders = res.reminders;
+
+        println!("successfully read file into memory...");
+        Ok(reminders)
+    }
 }
 
 // TODO:
@@ -127,34 +164,6 @@ pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>
     Ok(reminders.iter().find(|r| r.name == name).cloned())
 }
 
-/// Attempts to modify an existing `Reminder` by name with an `EditReminder`.
-/// Returns a result containing the number of changes, i.e. 0 means no edits were made.
-/// Currently multiple edits are not implemented nor tested.
-pub fn edit_reminder(path: &Path, name: &str, new_data: EditReminder) -> anyhow::Result<usize> {
-    let toml_content = fs::read_to_string(path)?;
-    let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
-    let index = reminders.iter().position(|r| r.name == name);
-    if let Some(idx) = index {
-        if let Some(new_name) = new_data.name {
-            reminders[idx].name = new_name;
-        }
-        if let Some(new_description) = new_data.description {
-            reminders[idx].description = new_description;
-        }
-        if let Some(new_frequency) = new_data.frequency {
-            reminders[idx].frequency = new_frequency;
-        }
-        // since the icon is already optional we don't need to check for Some
-        reminders[idx].icon = new_data.icon;
-        let ar = AllReminders { reminders };
-        let modified_toml = toml::to_string(&ar)?;
-        fs::write(path, modified_toml)?;
-        Ok(1)
-    } else {
-        Ok(0)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::reminders::{AllReminders, EditReminder};
@@ -174,9 +183,9 @@ mod tests {
         f.write_all(b"[[reminders]]\nname = \"Find me!\"\ndescription = \"...\"\nfrequency = 0\n[[reminders]]\nname = \"Dont find me\"\ndescription = \"You found me...\"\nfrequency = 1")
             .unwrap();
 
-        let res = super::edit_reminder(
-            &test_path,
-            "Find me!",
+        let res = super::commands::edit_reminder(
+            test_path.clone(),
+            "Find me!".to_string(),
             EditReminder {
                 name: None,
                 description: Some(String::from("New description!")),
@@ -204,7 +213,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
-        let result = super::read_all_reminders(test_path).unwrap();
+        let result = super::commands::read_all_reminders(test_path).unwrap();
         assert_eq!(result.len(), 0);
     }
     #[test]

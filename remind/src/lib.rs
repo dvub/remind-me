@@ -1,7 +1,7 @@
-use crate::reminders::read_all_reminders;
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
 use notify::{RecursiveMode, Watcher};
+use reminders::commands::read_all_reminders;
 use reminders::Reminder;
 use serde::Serialize;
 use std::collections::hash_map::DefaultHasher;
@@ -29,6 +29,8 @@ pub enum CommandError {
     IoError(#[from] std::io::Error),
     #[error("There was an error deserializing some data (probably in the TOML file): {0}")]
     DeserializationError(#[from] toml::de::Error),
+    #[error("There was an error serializing data: {0}")]
+    SerializationError(#[from] toml::ser::Error),
 }
 
 impl Serialize for CommandError {
@@ -43,6 +45,7 @@ impl Serialize for CommandError {
 // TODO: rename or fix
 // right now this is a rather silly wrapper
 // necessary because you can't have pub fns in lib/main marked with #[tauri::comand]
+
 pub mod commands {
     use std::{fs::File, path::PathBuf};
 

@@ -3,7 +3,9 @@ use remind::{
     commands::get_path,
     daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     reminders::{
-        add_reminder, delete_reminder, edit_reminder, read_all_reminders, EditReminder, Reminder,
+        add_reminder,
+        commands::{edit_reminder, read_all_reminders},
+        delete_reminder, EditReminder, Reminder,
     },
     run,
 };
@@ -106,7 +108,7 @@ fn main() -> anyhow::Result<()> {
                     frequency,
                     icon,
                 };
-                let res = edit_reminder(&path, &name, new_data)?;
+                let res = edit_reminder(path.clone(), name, new_data)?;
                 match res {
                     0 => {
                         println!("didn't find a reminder with that name. Nothing was changed");

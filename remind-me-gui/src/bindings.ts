@@ -22,6 +22,16 @@ export function getPath() {
 }
 
 /**
+ * Attempts to modify an existing `Reminder` by name with an `EditReminder`.
+ * Returns a result containing the number of changes, i.e. 0 means no edits were made.
+ * Currently multiple edits are not implemented nor tested.
+ */
+export function editReminder(path: string, name: string, newData: EditReminder) {
+    return invoke()<number>("edit_reminder", { path,name,newData })
+}
+
+export type EditReminder = { name: string | null; description: string | null; frequency: number | null; icon: string | null }
+/**
  * Struct to represent a reminder.
  */
 export type Reminder = { name: string; description: string; frequency: number; icon: string | null }

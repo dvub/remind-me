@@ -1,92 +1,63 @@
 'use client';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { invoke } from '@tauri-apps/api/tauri';
 import { useEffect, useState } from 'react';
 import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
 import { watch } from 'tauri-plugin-fs-watch-api';
+import ReminderCard from '@/components/reminder-card';
+import Config from '@/components/config';
+
 export default function Home() {
+	// console.log("Is autostarting?", isEnabled());
+	// enable();
+
 	const [path, setPath] = useState<string>('');
 	const [reminders, setReminders] = useState<Reminder[]>();
+
+	watch(
+		path,
+		(event) => {
+			updateReminders(path);
+		},
+		// TODO: find the optimal ms
+		{ recursive: false, delayMs: 50 }
+	);
+
+	const updateReminders = (path: string) => {
+		commands
+			.readAllReminders(path)
+			.then((res) => {
+				setReminders(res);
+				console.log('Reminders:', res);
+			})
+			.catch((e) =>
+				console.log('There was an error fetching reminders:', e)
+			);
+	};
+
 	useEffect(() => {
-		commands.getPath().then(res => {
-			setPath(res);
-			updateReminders(res);
-			console.log("Current path:", res);
-		}).catch(e => console.log("There was an error getting the path!"));	
-
-		// 
-		const updateReminders = (path: string) => {
-			commands.readAllReminders(path).then(res => {
-				setReminders(res)
-				console.log("Reminders:", res);
-			}).catch(e => console.log("There was an error fetching reminders:", e));	
-		}
-
-		const stopWatching = watch(
-			"/home/kaya/.local/share/remind-me/Config.toml",
-			(event) => {
-				// TODO:
-				updateReminders(path);
-			},
-			{ recursive: false },
-		);
-
-
-
+		// INITIALIZE
+		// set path state ASAP
+		commands
+			.getPath()
+			.then((res) => {
+				setPath(res);
+				updateReminders(res);
+				console.log('Current path:', res);
+			})
+			.catch((e) => console.log('There was an error getting the path!'));
 		// TODO:
 		// needs return here?
 	}, []);
 
-
-	const cards = reminders ? reminders.map((reminder, index) => {
-		const minutes = Math.floor(reminder.frequency / 60);
-		const seconds = reminder.frequency % 60;
-
-		const handleEdit = () => {
-			console.log('yello!');
-		};
-		return (
-			<Card key={index} className='my-5'>
-				<CardHeader>
-					<div className='flex justify-between'>
-						<div>
-							<CardTitle>{reminder.name}</CardTitle>
-							<CardDescription>
-								{reminder.description}
-							</CardDescription>
-						</div>
-
-						<Button variant='default' onClick={() => handleEdit()}>
-							Edit
-						</Button>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<div>
-						<h1 className='text-xl font-bold'>Frequency</h1>
-						<p>
-							Every
-							{minutes > 0 && ` ${minutes} minutes`}
-							{minutes > 0 && seconds > 0 && ','}
-							{seconds > 0 && ` ${seconds} seconds`}
-							.
-						</p>
-					</div>
-				</CardContent>
-			</Card>
-		);
-	}) : <p>loading</p>;
+	const cards = reminders ? (
+		reminders.map((reminder, index) => {
+			console.log(reminder);
+			return <ReminderCard reminder={reminder} key={index} path={path} />;
+		})
+	) : (
+		<p>loading</p>
+	);
 
 	return (
 		<main className='mx-[10vw]'>
@@ -98,10 +69,7 @@ export default function Home() {
 					{/* <p>Your current reminders:</p> */}
 					<Button variant='default'>New Reminder</Button>
 				</div>
-				<div className='flex gap-3'>
-					<p>Auto-start</p>
-					<Switch></Switch>
-				</div>
+				<Config />
 			</div>
 			<div>{cards}</div>
 		</main>
