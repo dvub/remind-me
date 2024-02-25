@@ -1,7 +1,6 @@
 use clap::Parser;
 use remind::{
     commands::get_path,
-    daemon::control::{is_daemon_running, start_daemon, stop_daemon},
     reminders::{
         commands::{add_reminder, delete_reminder, edit_reminder, read_all_reminders},
         EditReminder, Reminder,
@@ -23,45 +22,8 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Commands::Control { action } => match action {
-            ControlCommands::IsRunning => {
-                println!("checking if the remind daemon is running...");
-                let is_running = is_daemon_running()?;
-                match is_running {
-                    true => {
-                        println!("the daemon is running.");
-                    }
-                    false => println!("the daemon is not running."),
-                }
-            }
-            ControlCommands::Start { daemon } => {
-                if daemon {
-                    let is_running = is_daemon_running()?;
-                    match is_running {
-                        true => {
-                            println!("error: the daemon is running; multiple instances are not supported at this time. ");
-                        }
-                        false => {
-                            println!("the daemon is not running; starting...");
-                            // BOOM SUPER IMPORTANT RIGHT HERE!!
-                            start_daemon()?;
-                        }
-                    }
-                } else {
-                    run(path)?;
-                }
-            }
-            ControlCommands::Stop => {
-                let is_running = is_daemon_running()?;
-                match is_running {
-                    true => {
-                        println!("stopping... ");
-                        stop_daemon()?;
-                        println!("successfully stopped daemon.");
-                    }
-                    false => {
-                        println!("the daemon is not running; doing nothing...");
-                    }
-                }
+            ControlCommands::Start => {
+                run(path)?;
             }
         },
         Commands::Reminders { action } => match action {

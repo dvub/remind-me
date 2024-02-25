@@ -15,7 +15,6 @@ use std::{fs::create_dir, path::PathBuf};
 use directories::ProjectDirs;
 
 pub mod config;
-pub mod daemon;
 pub mod error;
 pub mod reminders;
 pub mod task;

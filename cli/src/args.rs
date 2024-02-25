@@ -61,14 +61,6 @@ pub enum RemindersCommands {
 
 #[derive(Subcommand)]
 pub enum ControlCommands {
-    /// Prints if the daemon is running or not. Note this only works if the program was started as a daemon.
-    IsRunning,
-    /// Runs the program. Runs as a daemon if the option is enabled.
-    Start {
-        /// Runs the program as a daemon. NOTE: AFAIK this is only supported for linux.
-        #[arg(long, short)]
-        daemon: bool,
-    },
-    /// Stops the daemon if it is running. Note this only works if the program was started as a daemon.
-    Stop,
+    /// Runs the program.
+    Start,
 }
