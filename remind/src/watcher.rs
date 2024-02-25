@@ -55,7 +55,6 @@ mod tests {
     use std::{
         fs::{create_dir_all, File},
         io::{self, Write},
-        path::Path,
         thread::{self, sleep},
         time::Duration,
     };
@@ -74,7 +73,7 @@ mod tests {
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
-            .watch(Path::new(&path), notify::RecursiveMode::NonRecursive)
+            .watch(&path, notify::RecursiveMode::NonRecursive)
             .unwrap();
         let mut times_written = 0;
 
