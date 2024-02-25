@@ -7,9 +7,9 @@ import {
 	AlertDialogCancel,
 	AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import { AlertDialogHeader, AlertDialogFooter } from './ui/alert-dialog';
+import { AlertDialogHeader, AlertDialogFooter } from '../ui/alert-dialog';
 import { TrashIcon } from '@radix-ui/react-icons';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import { deleteReminder } from '@/src/bindings';
 
 export default function DeleteReminderDialog(props: {

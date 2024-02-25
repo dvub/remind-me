@@ -14,7 +14,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
-import { DialogClose } from './ui/dialog';
+import { DialogClose } from '../ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as commands from '@/src/bindings';
 const formSchema = z

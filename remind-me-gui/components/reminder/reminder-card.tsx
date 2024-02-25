@@ -7,9 +7,9 @@ import {
 	CardDescription,
 	CardContent,
 	CardFooter,
-} from './ui/card';
+} from '../ui/card';
 import { TrashIcon } from '@radix-ui/react-icons';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import { Trash } from 'lucide-react';
 import DeleteReminderDialog from './delete-reminder-dialog';
 

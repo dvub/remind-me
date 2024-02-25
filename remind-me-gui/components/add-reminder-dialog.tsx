@@ -1,5 +1,5 @@
 import { Reminder } from '@/src/bindings';
-import EditReminderForm from './edit-reminder-form';
+import EditReminderForm from './reminder/edit-reminder-form';
 import { Button } from './ui/button';
 import {
 	DialogHeader,
@@ -15,13 +15,15 @@ export default function AddReminderDialog(props: { path: string }) {
 	const { path } = props;
 	return (
 		<Dialog>
-			<DialogTrigger>
-				{/*
+			<DialogTrigger asChild>
+				<Button>
+					{/*
 				<div>
 					<Button variant='default'>Add Reminder</Button>
 				</div>
 				*/}
 					Add Reminder
+				</Button>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
 				<DialogHeader>

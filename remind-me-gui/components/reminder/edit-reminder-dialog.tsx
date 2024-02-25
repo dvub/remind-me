@@ -1,13 +1,13 @@
 import { Reminder } from '@/src/bindings';
 import EditReminderForm from './edit-reminder-form';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import {
 	DialogHeader,
 	Dialog,
 	DialogTrigger,
 	DialogContent,
 	DialogDescription,
-} from './ui/dialog';
+} from '../ui/dialog';
 
 export default function EditReminderDialog(props: {
 	reminder: Reminder;
@@ -16,13 +16,15 @@ export default function EditReminderDialog(props: {
 	const { reminder, path } = props;
 	return (
 		<Dialog>
-			<DialogTrigger>
+			<DialogTrigger asChild>
 				{/*
 				<div>
 					<Button variant='default'>Edit</Button>
 				</div>
 				*/}
+				<Button>
 				Edit
+				</Button>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
 				<DialogHeader>

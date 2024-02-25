@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
 
-import ReminderCard from '@/components/reminder-card';
-import Config from '@/components/config';
+import ReminderCard from '@/components/reminder/reminder-card';
+import Config from '@/components/config/config';
 import AddReminderDialog from '@/components/add-reminder-dialog';
-import { enable, isEnabled } from 'tauri-plugin-autostart-api';
+
 export default function Home() {
 	// console.log("Is autostarting?", isEnabled());
 	// enable();
@@ -28,12 +28,6 @@ export default function Home() {
 	};
 
 	useEffect(() => {
-		async function autoStart() {
-			await enable();
-			console.log(`registered for autostart? ${await isEnabled()}`);
-		}
-		autoStart();
-
 		// INITIALIZE
 		// set path state ASAP
 		commands
@@ -48,10 +42,13 @@ export default function Home() {
 		async function setUpWatching() {
 			return await (
 				await import('tauri-plugin-fs-watch-api')
-			).watch(path, (e) => {
-				updateReminders(path);
-			});
-			// watch();
+			).watch(
+				path,
+				(e) => {
+					updateReminders(path);
+				},
+				{ delayMs: 0, recursive: false }
+			);
 		}
 		setUpWatching();
 	}, [path]);
@@ -68,11 +65,12 @@ export default function Home() {
 	return (
 		<main className='mx-[10vw]'>
 			<div className='my-5 flex justify-between items-start'>
-				<div>
+				<div className='w-full'>
 					<h1 className='text-3xl font-semibold'>Remind-me</h1>
 					{/* TODO: randomize subheader! would be a fun detail :) */}
 					<h2 className='mb-5 text-xl'>Welcome back!</h2>
 					{/* <p>Your current reminders:</p> */}
+
 					<AddReminderDialog path={path} />
 				</div>
 				<Config />
@@ -81,7 +79,7 @@ export default function Home() {
 				<div>
 					{reminders.length > 0 && <div>{cards}</div>}
 					{reminders.length === 0 && (
-						<div className='w-full text-center text-black/50'>
+						<div className='w-full flex justify-center text-center text-black/50'>
 							<p>No reminders found... </p>
 						</div>
 					)}

@@ -20,7 +20,11 @@ fn main() {
             get_path,
             edit_reminder,
             delete_reminder,
-            add_reminder
+            add_reminder,
+            read_config,
+            get_config_path,
+            update_run_backend_with_gui,
+            update_start_minimized
         ],
         "../src/bindings.ts",
     )
@@ -46,7 +50,7 @@ fn main() {
             }
         }
     };
-    let config = read_config(&get_config_path().unwrap()).unwrap();
+    let config = read_config(get_config_path().unwrap()).unwrap();
 
     tauri::Builder::default()
         // register plugins
@@ -61,7 +65,11 @@ fn main() {
             get_path,
             edit_reminder,
             delete_reminder,
-            add_reminder
+            add_reminder,
+            read_config,
+            get_config_path,
+            update_run_backend_with_gui,
+            update_start_minimized
         ])
         // prevents the GUI from fully closing
         .on_window_event(|event| {
@@ -76,6 +84,7 @@ fn main() {
         // run backend when GUI starts
         .setup(move |_| {
             if config.run_backend_on_gui_start {
+                println!("starting backend");
                 thread::spawn(|| {
                     run(get_path().expect("error getting path")).expect("error running backend")
                 });

@@ -46,8 +46,25 @@ export function addReminder(path: string, reminder: Reminder) {
     return invoke()<null>("add_reminder", { path,reminder })
 }
 
+export function readConfig(path: string) {
+    return invoke()<Config>("read_config", { path })
+}
+
+export function getConfigPath() {
+    return invoke()<string>("get_config_path")
+}
+
+export function updateRunBackendWithGui(path: string, newVal: boolean) {
+    return invoke()<null>("update_run_backend_with_gui", { path,newVal })
+}
+
+export function updateStartMinimized(path: string, newVal: boolean) {
+    return invoke()<null>("update_start_minimized", { path,newVal })
+}
+
 export type EditReminder = { name: string | null; description: string | null; frequency: number | null; icon: string | null }
 /**
  * Struct to represent a reminder.
  */
 export type Reminder = { name: string; description: string; frequency: number; icon: string | null }
+export type Config = { start_minimized: boolean; run_backend_on_gui_start: boolean }
