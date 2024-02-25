@@ -90,6 +90,7 @@ mod tests {
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
 
+        temp_dir.close().unwrap();
         times_written
     }
     #[test]

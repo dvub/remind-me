@@ -62,7 +62,7 @@ pub fn update_run_backend_with_gui(path: PathBuf, new_val: bool) -> Result<(), C
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::{self, File},
+        fs::{self, create_dir_all, File},
         io::Write,
     };
 
@@ -73,6 +73,7 @@ mod tests {
     #[test]
     fn test_read_config() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let path = temp_dir.path().join("Test.toml");
         let mut file = File::create(&path).unwrap();
         file.write_all(b"start_minimized = true\nrun_backend_on_gui_start = false")
@@ -85,6 +86,7 @@ mod tests {
     #[test]
     fn update_values() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let path = temp_dir.path().join("Test.toml");
         let mut file = File::create(&path).unwrap();
         file.write_all(b"start_minimized = true\nrun_backend_on_gui_start = false")
