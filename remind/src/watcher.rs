@@ -100,7 +100,7 @@ mod tests {
                 println!("Wrote to file...");
                 std::thread::sleep(Duration::from_millis(10));
             }
-            // sleep(Duration::from_secs(2));
+            sleep(Duration::from_secs(2));
             Ok(())
         });
         assert_eq!(changes, 1);
