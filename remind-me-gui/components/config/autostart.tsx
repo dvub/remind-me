@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { enable, disable, isEnabled } from 'tauri-plugin-autostart-api';
 import { Switch } from '../ui/switch';
+import { Card } from '../ui/card';
 
 export default function Autostart() {
 	function handleAutoStartChange(e: boolean) {
@@ -21,18 +22,20 @@ export default function Autostart() {
 		s();
 	}, []);
 	return (
-		<div className='flex w-full justify-between my-5'>
-			<div>
-				<h1 className='font-bold'>Auto-start</h1>
-				<p className='max-w-[80%]'>
-					Enabling this will start the program when you log in to your
-					computer.
-				</p>
+		<Card className='m-3 px-5'>
+			<div className='flex w-full justify-between my-5'>
+				<div>
+					<h1 className='font-bold'>Auto-start</h1>
+					<p className='max-w-[80%]'>
+						Enabling this will start the program when you log in to
+						your computer.
+					</p>
+				</div>
+				<Switch
+					checked={autostart}
+					onCheckedChange={(e) => handleAutoStartChange(e)}
+				/>
 			</div>
-			<Switch
-				checked={autostart}
-				onCheckedChange={(e) => handleAutoStartChange(e)}
-			/>
-		</div>
+		</Card>
 	);
 }

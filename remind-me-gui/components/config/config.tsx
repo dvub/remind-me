@@ -44,7 +44,8 @@ export default function Config() {
 							enabled={config?.start_minimized!}
 							path={path!}
 						/>
-						<h1 className='font-bold'>Advanced</h1>
+
+						<h1 className='font-bold text-red-600'>Advanced</h1>
 						<p>
 							Please proceed with caution. Modifying the following
 							settings may cause the program to not function
