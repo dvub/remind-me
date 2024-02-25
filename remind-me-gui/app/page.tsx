@@ -18,14 +18,6 @@ export default function Home() {
 	// console.log("Is autostarting?", isEnabled());
 	// enable();
 
-	const [watch, setWatch] =
-		useState<
-			(
-				paths: string | string[],
-				cb: (event: DebouncedEvent) => void,
-				options?: DebouncedWatchOptions | undefined
-			) => Promise<UnlistenFn>
-		>();
 	const [path, setPath] = useState<string>('');
 	const [reminders, setReminders] = useState<Reminder[]>();
 
@@ -42,15 +34,6 @@ export default function Home() {
 	};
 
 	useEffect(() => {
-		async function setUpWatching() {
-			const watch = await (
-				await import('tauri-plugin-fs-watch-api')
-			).watch(path, (e) => {
-				updateReminders(path);
-			});
-			// watch();
-		}
-		setUpWatching();
 		async function w() {
 			await enable();
 			console.log(`registered for autostart? ${await isEnabled()}`);
@@ -67,6 +50,16 @@ export default function Home() {
 				console.log('Current path:', res);
 			})
 			.catch((e) => console.log('There was an error getting the path!'));
+
+		async function setUpWatching() {
+			return await (
+				await import('tauri-plugin-fs-watch-api')
+			).watch(path, (e) => {
+				updateReminders(path);
+			});
+			// watch();
+		}
+		setUpWatching();
 	}, [path]);
 
 	const cards = reminders ? (
