@@ -3,26 +3,31 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import * as commands from '@/src/bindings';
 import { Reminder } from '@/src/bindings';
-import { watch } from 'tauri-plugin-fs-watch-api';
+
 import ReminderCard from '@/components/reminder-card';
 import Config from '@/components/config';
 import AddReminderDialog from '@/components/add-reminder-dialog';
+import { enable, isEnabled } from 'tauri-plugin-autostart-api';
+import {
+	DebouncedEvent,
+	DebouncedWatchOptions,
+} from 'tauri-plugin-fs-watch-api';
+import { UnlistenFn } from '@tauri-apps/api/event';
 
 export default function Home() {
 	// console.log("Is autostarting?", isEnabled());
 	// enable();
 
+	const [watch, setWatch] =
+		useState<
+			(
+				paths: string | string[],
+				cb: (event: DebouncedEvent) => void,
+				options?: DebouncedWatchOptions | undefined
+			) => Promise<UnlistenFn>
+		>();
 	const [path, setPath] = useState<string>('');
 	const [reminders, setReminders] = useState<Reminder[]>();
-
-	watch(
-		path,
-		(event) => {
-			updateReminders(path);
-		},
-		// TODO: find the optimal ms
-		{ recursive: false, delayMs: 100 }
-	);
 
 	const updateReminders = (path: string) => {
 		commands
@@ -37,6 +42,21 @@ export default function Home() {
 	};
 
 	useEffect(() => {
+		async function setUpWatching() {
+			const watch = await (
+				await import('tauri-plugin-fs-watch-api')
+			).watch(path, (e) => {
+				updateReminders(path);
+			});
+			// watch();
+		}
+		setUpWatching();
+		async function w() {
+			await enable();
+			console.log(`registered for autostart? ${await isEnabled()}`);
+		}
+		w();
+
 		// INITIALIZE
 		// set path state ASAP
 		commands
@@ -47,9 +67,7 @@ export default function Home() {
 				console.log('Current path:', res);
 			})
 			.catch((e) => console.log('There was an error getting the path!'));
-		// TODO:
-		// needs return here?
-	}, []);
+	}, [path]);
 
 	const cards = reminders ? (
 		reminders.map((reminder, index) => {

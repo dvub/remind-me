@@ -16,7 +16,9 @@ export default function AddReminderDialog(props: { path: string }) {
 	return (
 		<Dialog>
 			<DialogTrigger>
-				<Button variant='default'>Add Reminder</Button>
+				<div>
+					<Button variant='default'>Add Reminder</Button>
+				</div>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
 				<DialogHeader>

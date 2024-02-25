@@ -17,7 +17,9 @@ export default function EditReminderDialog(props: {
 	return (
 		<Dialog>
 			<DialogTrigger>
-				<Button variant='default'>Edit</Button>
+				<div>
+					<Button variant='default'>Edit</Button>
+				</div>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
 				<DialogHeader>
