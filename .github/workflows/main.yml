@@ -37,6 +37,7 @@ jobs:
         uses: pnpm/action-setup@v3.0.0
         with:
           package_json_file: './remind-me-gui/package.json'
+          version: 8
         
       - name: install frontend dependencies
         run: pnpm install # change this to npm or pnpm depending on which one you use
