@@ -22,6 +22,8 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
                 if let EventKind::Modify(_) = event.kind {
                     println!("Detected a change...");
                     tx.blocking_send(event).unwrap();
+                } else {
+                    println!("Some other change occurred...");
                 }
             }
         }
@@ -51,7 +53,7 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
 mod tests {
     use notify::Watcher;
     use std::{
-        fs::File,
+        fs::{create_dir_all, File},
         io::{self, Write},
         path::Path,
         thread::{self, sleep},
@@ -65,6 +67,7 @@ mod tests {
     {
         // set up the file
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let path = temp_dir.path().join("test.txt");
         let mut test_file = File::create(&path).unwrap();
         // create our watcher
@@ -77,7 +80,7 @@ mod tests {
 
         let write_thread_handle = thread::spawn(move || {
             write_logic(&mut test_file).unwrap();
-            drop(test_file);
+            std::thread::sleep(Duration::from_secs(2));
             debouncer.stop();
         });
         // we need to detect changes here while the other thread is writing file changes
@@ -86,6 +89,7 @@ mod tests {
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
+
         temp_dir.close().unwrap();
         times_written
     }
@@ -94,6 +98,7 @@ mod tests {
         let changes = count_changes(|file| {
             for _ in 0..3 {
                 file.write_all(b"hello, world!\n")?;
+                println!("Wrote to file...");
                 std::thread::sleep(Duration::from_millis(10));
             }
             sleep(Duration::from_secs(2));
@@ -108,6 +113,7 @@ mod tests {
         let changes = count_changes(move |file| {
             for _ in 0..expected_num_changes {
                 file.write_all(b"hello, world!\n")?;
+                println!("Wrote to file...");
                 std::thread::sleep(Duration::from_secs(2));
             }
             Ok(())
@@ -122,6 +128,7 @@ mod tests {
             for _ in 0..outer_iter_count {
                 for _ in 0..3 {
                     file.write_all(b"hello, world\n").unwrap();
+                    println!("Wrote to file...");
                 }
                 sleep(Duration::from_secs(2));
             }

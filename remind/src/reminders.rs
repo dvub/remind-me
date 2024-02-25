@@ -169,13 +169,14 @@ mod tests {
 
     use super::{commands::add_reminder, Reminder};
     use std::{
-        fs::File,
+        fs::{create_dir_all, File},
         io::{Read, Write},
     };
     use tempfile::tempdir;
     #[test]
     fn edit_and_read() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
         // write a few reminders into test file
@@ -210,6 +211,7 @@ mod tests {
     #[test]
     fn read_all_from_empty_file() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
         let result = super::commands::read_all_reminders(test_path).unwrap();
@@ -218,6 +220,7 @@ mod tests {
     #[test]
     fn read_all_from_one() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
         // write a few reminders into test file
@@ -235,6 +238,7 @@ mod tests {
     #[test]
     fn read_reminder_none() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut f = File::create(&test_path).unwrap();
         // write a few reminders into test file
@@ -250,6 +254,7 @@ mod tests {
     #[test]
     fn test_add_reminder() {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         File::create(&test_path).unwrap();
         //create(&path).unwrap();
@@ -279,6 +284,7 @@ mod tests {
     /// The output of this function is intended to be used for assertions
     fn delete_reminder_read_remaining(reminder_str: &str, name: &str) -> (String, i32) {
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let test_path = temp_dir.path().join("Test.toml");
         let mut test_file = File::create(&test_path).unwrap();
         test_file.write_all(reminder_str.as_bytes()).unwrap();
