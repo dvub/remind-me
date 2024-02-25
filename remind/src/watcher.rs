@@ -80,8 +80,10 @@ mod tests {
         let write_thread_handle = thread::spawn(move || {
             write_logic(&mut test_file).unwrap();
             std::thread::sleep(Duration::from_secs(2));
+            debouncer.watcher().unwatch(&path).unwrap();
             debouncer.stop();
         });
+
         // we need to detect changes here while the other thread is writing file changes
         while rx.blocking_recv().is_some() {
             times_written += 1;
