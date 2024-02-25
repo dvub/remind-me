@@ -97,6 +97,7 @@ mod tests {
         let changes = count_changes(|file| {
             for _ in 0..3 {
                 file.write_all(b"hello, world!\n")?;
+                println!("Wrote to file...");
                 std::thread::sleep(Duration::from_millis(10));
             }
             // sleep(Duration::from_secs(2));
@@ -111,6 +112,7 @@ mod tests {
         let changes = count_changes(move |file| {
             for _ in 0..expected_num_changes {
                 file.write_all(b"hello, world!\n")?;
+                println!("Wrote to file...");
                 std::thread::sleep(Duration::from_secs(2));
             }
             Ok(())
@@ -125,6 +127,7 @@ mod tests {
             for _ in 0..outer_iter_count {
                 for _ in 0..3 {
                     file.write_all(b"hello, world\n").unwrap();
+                    println!("Wrote to file...");
                 }
                 sleep(Duration::from_secs(2));
             }
