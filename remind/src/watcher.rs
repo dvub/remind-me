@@ -22,6 +22,8 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
                 if let EventKind::Modify(_) = event.kind {
                     println!("Detected a change...");
                     tx.blocking_send(event).unwrap();
+                } else {
+                    println!("Some other change occurred...");
                 }
             }
         }
@@ -78,7 +80,7 @@ mod tests {
 
         let write_thread_handle = thread::spawn(move || {
             write_logic(&mut test_file).unwrap();
-            drop(test_file);
+            std::thread::sleep(Duration::from_secs(2));
             debouncer.stop();
         });
         // we need to detect changes here while the other thread is writing file changes
@@ -87,7 +89,7 @@ mod tests {
         }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
-        temp_dir.close().unwrap();
+
         times_written
     }
     #[test]
@@ -97,7 +99,7 @@ mod tests {
                 file.write_all(b"hello, world!\n")?;
                 std::thread::sleep(Duration::from_millis(10));
             }
-            sleep(Duration::from_secs(2));
+            // sleep(Duration::from_secs(2));
             Ok(())
         });
         assert_eq!(changes, 1);
