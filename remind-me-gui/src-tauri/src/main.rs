@@ -3,13 +3,14 @@
 
 use std::thread;
 
-use remind::{commands::*, reminders::commands::*, run};
+use remind::{commands::*, config::*, reminders::commands::*, run};
 use specta::collect_types;
 use tauri::{
     AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 use tauri_plugin_autostart::MacosLauncher;
+
 fn main() {
     // when built, specta generates types
     #[cfg(debug_assertions)]
@@ -45,6 +46,7 @@ fn main() {
             }
         }
     };
+    let config = read_config(&get_config_path().unwrap()).unwrap();
 
     tauri::Builder::default()
         // register plugins
@@ -72,20 +74,24 @@ fn main() {
         .system_tray(tray)
         .on_system_tray_event(tray_event_handler)
         // run backend when GUI starts
-        .setup(|_| {
-            thread::spawn(|| {
-                run(get_path().expect("error getting path")).expect("error running backend")
-            });
+        .setup(move |_| {
+            if config.run_backend_on_gui_start {
+                thread::spawn(|| {
+                    run(get_path().expect("error getting path")).expect("error running backend")
+                });
+            }
             Ok(())
         })
         // build
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         // start minimized
-        .run(|app, event| {
+        .run(move |app, event| {
             if let tauri::RunEvent::Ready = event {
-                let window = app.get_window("main").unwrap();
-                window.hide().unwrap();
+                if config.start_minimized {
+                    let window = app.get_window("main").unwrap();
+                    window.hide().unwrap();
+                }
             }
         });
 }
