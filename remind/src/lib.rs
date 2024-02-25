@@ -1,17 +1,22 @@
 use crate::task::collect_and_run_tasks;
 use crate::watcher::gen_watcher_receiver;
+
 use notify::{RecursiveMode, Watcher};
 use reminders::commands::read_all_reminders;
 use reminders::Reminder;
-use serde::Serialize;
+
 use std::collections::hash_map::DefaultHasher;
+
 use std::hash::{Hash, Hasher};
 use std::io;
+
 use std::{fs::create_dir, path::PathBuf};
 
 use directories::ProjectDirs;
 
+pub mod config;
 pub mod daemon;
+pub mod error;
 pub mod reminders;
 pub mod task;
 pub mod watcher;
@@ -21,27 +26,6 @@ pub mod watcher;
 // TODO: more documentation - in progress
 // TODO: testing - huge improvements - in progress
 
-/// This struct uses `thiserror` to wrap all of the possible errors that Tauri commands can return.
-/// This struct implements `Serialize` so that these errors can be sent to the frontend.
-#[derive(Debug, thiserror::Error)]
-pub enum CommandError {
-    #[error("There was an IO Error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("There was an error deserializing some data (probably in the TOML file): {0}")]
-    DeserializationError(#[from] toml::de::Error),
-    #[error("There was an error serializing data: {0}")]
-    SerializationError(#[from] toml::ser::Error),
-}
-
-impl Serialize for CommandError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_ref())
-    }
-}
-
 // TODO: rename or fix
 // right now this is a rather silly wrapper
 // necessary because you can't have pub fns in lib/main marked with #[tauri::comand]
@@ -49,7 +33,7 @@ impl Serialize for CommandError {
 pub mod commands {
     use std::{fs::File, path::PathBuf};
 
-    use crate::{get_dir, CommandError};
+    use crate::{error::CommandError, get_dir};
 
     #[tauri::command]
     #[specta::specta]
@@ -57,9 +41,9 @@ pub mod commands {
     pub fn get_path() -> Result<PathBuf, CommandError> {
         let data_dir = get_dir()?;
 
-        let path = data_dir.join("Config.toml");
+        let path = data_dir.join("Reminders.toml");
         if !path.exists() {
-            println!("didn't find an existing toml file, creating an empty one...");
+            println!("didn't find an existing reminders.toml file, creating an empty one...");
             File::create(&path)?;
         }
         Ok(path)
@@ -132,7 +116,7 @@ pub async fn run(path: PathBuf) -> anyhow::Result<()> {
 pub fn get_dir() -> Result<PathBuf, io::Error> {
     // TODO:
     // fix this unwrap since its on an Option
-    let project_dir = ProjectDirs::from("com", "dvub", "remind-me").unwrap();
+    let project_dir = get_project_dirs();
     let data_dir = project_dir.data_dir();
     if !data_dir.exists() {
         println!("directory does not exist; creating data directory...");
@@ -151,4 +135,7 @@ pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
             hasher.finish()
         })
         .collect::<Vec<_>>()
+}
+fn get_project_dirs() -> ProjectDirs {
+    ProjectDirs::from("com", "dvub", "remind-me").unwrap()
 }

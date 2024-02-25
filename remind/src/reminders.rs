@@ -29,15 +29,13 @@ pub struct EditReminder {
     pub icon: Option<String>,
 }
 
-/// Wrapper struct containing a `Vec` of `Reminder`s.
-/// This struct may also be used to store additional app data from the TOML file.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AllReminders {
+pub struct Reminders {
     pub reminders: Vec<Reminder>,
 }
 pub mod commands {
-    use super::{AllReminders, EditReminder, Reminder};
-    use crate::CommandError;
+    use super::{EditReminder, Reminder, Reminders};
+    use crate::error::CommandError;
     use std::{
         fs::{self, File},
         io::Write,
@@ -55,7 +53,7 @@ pub mod commands {
         new_data: EditReminder,
     ) -> Result<i32, CommandError> {
         let toml_content = fs::read_to_string(&path)?;
-        let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+        let mut reminders = toml::from_str::<Reminders>(&toml_content)?.reminders;
         let index = reminders.iter().position(|r| r.name == name);
         if let Some(idx) = index {
             if let Some(new_name) = new_data.name {
@@ -69,7 +67,7 @@ pub mod commands {
             }
             // since the icon is already optional we don't need to check for Some
             reminders[idx].icon = new_data.icon;
-            let ar = AllReminders { reminders };
+            let ar = Reminders { reminders };
             let modified_toml = toml::to_string(&ar)?;
             fs::write(&path, modified_toml)?;
             Ok(1)
@@ -89,7 +87,7 @@ pub mod commands {
         if toml_str.is_empty() {
             return Ok(Vec::new());
         }
-        let res: AllReminders = toml::from_str(&toml_str)?;
+        let res: Reminders = toml::from_str(&toml_str)?;
         let reminders = res.reminders;
         Ok(reminders)
     }
@@ -101,7 +99,7 @@ pub mod commands {
     pub fn delete_reminder(path: PathBuf, name: &str) -> Result<i32, CommandError> {
         let toml_content = fs::read_to_string(&path)?;
         // i luv turbofish syntax
-        let mut reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+        let mut reminders = toml::from_str::<Reminders>(&toml_content)?.reminders;
         let init_length = reminders.len() as i32;
 
         // modify
@@ -120,7 +118,7 @@ pub mod commands {
         // println!("{num_changes}");
 
         // we need to make use of our wrapper struct
-        let ar = AllReminders { reminders };
+        let ar = Reminders { reminders };
         let modified_toml = toml::to_string(&ar)?;
         fs::write(path, modified_toml)?;
         Ok(num_changes)
@@ -160,14 +158,14 @@ pub mod commands {
 
 pub fn read_reminder(path: &Path, name: &str) -> anyhow::Result<Option<Reminder>> {
     let toml_content = fs::read_to_string(path)?;
-    let reminders = toml::from_str::<AllReminders>(&toml_content)?.reminders;
+    let reminders = toml::from_str::<Reminders>(&toml_content)?.reminders;
     // TODO: rm cloned
     Ok(reminders.iter().find(|r| r.name == name).cloned())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::reminders::{AllReminders, EditReminder};
+    use crate::reminders::{EditReminder, Reminders};
 
     use super::{commands::add_reminder, Reminder};
     use std::{
@@ -197,7 +195,7 @@ mod tests {
         .unwrap();
 
         let toml_content = std::fs::read_to_string(&test_path).unwrap();
-        let reminders = toml::from_str::<AllReminders>(&toml_content)
+        let reminders = toml::from_str::<Reminders>(&toml_content)
             .unwrap()
             .reminders;
 

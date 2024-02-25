@@ -5,8 +5,13 @@ use std::thread;
 
 use remind::{commands::*, reminders::commands::*, run};
 use specta::collect_types;
+use tauri::{
+    AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    SystemTrayMenuItem,
+};
 use tauri_plugin_autostart::MacosLauncher;
 fn main() {
+    // when built, specta generates types
     #[cfg(debug_assertions)]
     tauri_specta::ts::export(
         collect_types![
@@ -20,13 +25,35 @@ fn main() {
     )
     .unwrap();
 
-    // TODO:
-    // not thread::spawn LOL
-    thread::spawn(|| {
-        run(get_path().expect("error getting path")).expect("error running backend");
-    });
+    let menu = SystemTrayMenu::new()
+        .add_item(CustomMenuItem::new(String::from("quit"), "Quit"))
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new(String::from("open"), "Open"));
+    let tray = SystemTray::new().with_menu(menu);
+
+    let tray_event_handler = |app: &AppHandle, event| {
+        if let SystemTrayEvent::MenuItemClick { id, .. } = event {
+            match id.as_str() {
+                "quit" => {
+                    std::process::exit(0);
+                }
+                "open" => {
+                    let window = app.get_window("main").unwrap();
+                    window.show().unwrap();
+                }
+                _ => {}
+            }
+        }
+    };
 
     tauri::Builder::default()
+        // register plugins
+        .plugin(tauri_plugin_fs_watch::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None, // autostart args go here, don't think i need anything for now
+        ))
+        // set up the commands that will be invoked from the frontend
         .invoke_handler(tauri::generate_handler![
             read_all_reminders,
             get_path,
@@ -34,11 +61,31 @@ fn main() {
             delete_reminder,
             add_reminder
         ])
-        .plugin(tauri_plugin_fs_watch::init())
-        .plugin(tauri_plugin_autostart::init(
-            MacosLauncher::LaunchAgent,
-            None, // autostart args go here, don't think i need anything for now
-        ))
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        // prevents the GUI from fully closing
+        .on_window_event(|event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
+                event.window().hide().unwrap();
+                api.prevent_close();
+            }
+        })
+        // register and configure tray/events
+        .system_tray(tray)
+        .on_system_tray_event(tray_event_handler)
+        // run backend when GUI starts
+        .setup(|_| {
+            thread::spawn(|| {
+                run(get_path().expect("error getting path")).expect("error running backend")
+            });
+            Ok(())
+        })
+        // build
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        // start minimized
+        .run(|app, event| {
+            if let tauri::RunEvent::Ready = event {
+                let window = app.get_window("main").unwrap();
+                window.hide().unwrap();
+            }
+        });
 }

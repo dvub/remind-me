@@ -8,12 +8,6 @@ import ReminderCard from '@/components/reminder-card';
 import Config from '@/components/config';
 import AddReminderDialog from '@/components/add-reminder-dialog';
 import { enable, isEnabled } from 'tauri-plugin-autostart-api';
-import {
-	DebouncedEvent,
-	DebouncedWatchOptions,
-} from 'tauri-plugin-fs-watch-api';
-import { UnlistenFn } from '@tauri-apps/api/event';
-
 export default function Home() {
 	// console.log("Is autostarting?", isEnabled());
 	// enable();
@@ -34,11 +28,11 @@ export default function Home() {
 	};
 
 	useEffect(() => {
-		async function w() {
+		async function autoStart() {
 			await enable();
 			console.log(`registered for autostart? ${await isEnabled()}`);
 		}
-		w();
+		autoStart();
 
 		// INITIALIZE
 		// set path state ASAP
