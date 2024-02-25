@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, create_dir, File},
+    fs::{self, create_dir_all, File},
     io::Write,
     path::PathBuf,
 };
@@ -20,7 +20,7 @@ pub fn get_config_path() -> Result<PathBuf, CommandError> {
     let project_dir = get_project_dirs();
     let pref_dir = project_dir.preference_dir();
     if !pref_dir.exists() {
-        create_dir(pref_dir)?;
+        create_dir_all(pref_dir)?;
     }
 
     let path = pref_dir.join("Config.toml");

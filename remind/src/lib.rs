@@ -8,9 +8,8 @@ use reminders::Reminder;
 use std::collections::hash_map::DefaultHasher;
 
 use std::hash::{Hash, Hasher};
-use std::io;
 
-use std::{fs::create_dir, path::PathBuf};
+use std::path::PathBuf;
 
 use directories::ProjectDirs;
 
@@ -30,15 +29,25 @@ pub mod watcher;
 // necessary because you can't have pub fns in lib/main marked with #[tauri::comand]
 
 pub mod commands {
-    use std::{fs::File, path::PathBuf};
+    use std::{
+        fs::{create_dir_all, File},
+        path::PathBuf,
+    };
 
-    use crate::{error::CommandError, get_dir};
+    use crate::{error::CommandError, get_project_dirs};
 
     #[tauri::command]
     #[specta::specta]
     // call it db??
     pub fn get_path() -> Result<PathBuf, CommandError> {
-        let data_dir = get_dir()?;
+        // TODO:
+        // fix this unwrap since its on an Option
+        let project_dir = get_project_dirs();
+        let data_dir = project_dir.data_dir();
+        if !data_dir.exists() {
+            println!("directory does not exist; creating data directory...");
+            create_dir_all(data_dir)?;
+        }
 
         let path = data_dir.join("Reminders.toml");
         if !path.exists() {
@@ -123,30 +132,13 @@ pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
         .collect::<Vec<_>>()
 }
 
-// fix pathbuf
-pub fn get_dir() -> Result<PathBuf, io::Error> {
-    // TODO:
-    // fix this unwrap since its on an Option
-    let project_dir = get_project_dirs();
-    let data_dir = project_dir.data_dir();
-    if !data_dir.exists() {
-        println!("directory does not exist; creating data directory...");
-        create_dir(data_dir)?;
-    }
-    Ok(data_dir.to_path_buf())
-}
-
 fn get_project_dirs() -> ProjectDirs {
     ProjectDirs::from("com", "dvub", "remind-me").unwrap()
 }
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_config_dir_exists() {
-        assert!(super::get_dir().is_ok())
-    }
-    #[test]
-    fn test_db_path_exists() {
+    fn test_data_path_exists() {
         assert!(super::commands::get_path().is_ok());
     }
 }

@@ -51,7 +51,7 @@ pub fn gen_watcher_receiver() -> anyhow::Result<(
 mod tests {
     use notify::Watcher;
     use std::{
-        fs::File,
+        fs::{create_dir_all, File},
         io::{self, Write},
         path::Path,
         thread::{self, sleep},
@@ -65,6 +65,7 @@ mod tests {
     {
         // set up the file
         let temp_dir = tempdir().unwrap();
+        create_dir_all(temp_dir.path()).unwrap();
         let path = temp_dir.path().join("test.txt");
         let mut test_file = File::create(&path).unwrap();
         // create our watcher
