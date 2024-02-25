@@ -1,4 +1,4 @@
-use notify::{EventKind, INotifyWatcher};
+use notify::{EventKind, RecommendedWatcher};
 use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, FileIdMap};
 use std::time::Duration;
 use tokio::sync::mpsc::{channel, Receiver};
@@ -7,14 +7,12 @@ use tokio::sync::mpsc::{channel, Receiver};
 // https://github.com/notify-rs/notify/blob/main/examples/async_monitor.rs
 
 // this is magical
-
-///
 /// Generates and returns a tuplet of a file watcher a receiver.
 /// The watcher must be configured outside of this function to watch a file to keep it in scope and running.
 /// The receiver will receive a message anytime the target file is modified.
 ///
 pub fn gen_watcher_receiver() -> anyhow::Result<(
-    Debouncer<INotifyWatcher, FileIdMap>,
+    Debouncer<RecommendedWatcher, FileIdMap>,
     Receiver<DebouncedEvent>,
 )> {
     let (tx, receiver) = channel(1);
