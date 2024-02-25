@@ -111,6 +111,18 @@ pub async fn run(path: PathBuf) -> anyhow::Result<()> {
         reminders = new_reminders;
     }
 }
+/// Hashes a vec of reminders. (this was abstracted as such for consistency)
+pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
+    reminders
+        .iter()
+        .map(|reminder| {
+            let mut hasher = DefaultHasher::new();
+            reminder.hash(&mut hasher);
+            hasher.finish()
+        })
+        .collect::<Vec<_>>()
+}
+
 // fix pathbuf
 pub fn get_dir() -> Result<PathBuf, io::Error> {
     // TODO:
@@ -124,17 +136,17 @@ pub fn get_dir() -> Result<PathBuf, io::Error> {
     Ok(data_dir.to_path_buf())
 }
 
-/// Hashes a vec of reminders. (this was abstracted as such for consistency)
-pub fn get_hashes(reminders: Vec<&Reminder>) -> Vec<u64> {
-    reminders
-        .iter()
-        .map(|reminder| {
-            let mut hasher = DefaultHasher::new();
-            reminder.hash(&mut hasher);
-            hasher.finish()
-        })
-        .collect::<Vec<_>>()
-}
 fn get_project_dirs() -> ProjectDirs {
     ProjectDirs::from("com", "dvub", "remind-me").unwrap()
+}
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_config_dir_exists() {
+        assert!(super::get_dir().is_ok())
+    }
+    #[test]
+    fn test_db_path_exists() {
+        assert!(super::commands::get_path().is_ok());
+    }
 }
