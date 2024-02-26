@@ -55,6 +55,7 @@ mod tests {
     use std::{
         fs::{create_dir_all, File},
         io::{self, Write},
+        sync::{Arc, Mutex},
         thread::{self, sleep},
         time::Duration,
     };
@@ -69,30 +70,30 @@ mod tests {
         create_dir_all(temp_dir.path()).unwrap();
         let path = temp_dir.path().join("test.txt");
         let mut test_file = File::create(&path).unwrap();
+
         // create our watcher
         let (mut debouncer, mut rx) = super::gen_watcher_receiver().unwrap();
         debouncer
             .watcher()
             .watch(&path, notify::RecursiveMode::NonRecursive)
             .unwrap();
-        let mut times_written = 0;
+        let times_written = Arc::new(Mutex::new(0));
 
         let write_thread_handle = thread::spawn(move || {
             write_logic(&mut test_file).unwrap();
             std::thread::sleep(Duration::from_secs(2));
-            debouncer.watcher().unwatch(&path).unwrap();
-            debouncer.stop();
+        });
+        let times_written_clone = times_written.clone();
+        thread::spawn(move || {
+            while rx.blocking_recv().is_some() {
+                *times_written_clone.lock().unwrap() += 1;
+            }
         });
 
-        // we need to detect changes here while the other thread is writing file changes
-        while rx.blocking_recv().is_some() {
-            times_written += 1;
-        }
         // wait for the writing thread to finish
         write_thread_handle.join().unwrap();
-
-        temp_dir.close().unwrap();
-        times_written
+        let n = *times_written.lock().unwrap();
+        n
     }
     #[test]
     fn detect_single_change() {
