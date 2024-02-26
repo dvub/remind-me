@@ -1,4 +1,4 @@
-name: Rust
+name: Cross-platform Building & Testing
 
 on:
   push:
