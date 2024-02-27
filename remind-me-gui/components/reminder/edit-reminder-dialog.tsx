@@ -8,6 +8,7 @@ import {
 	DialogContent,
 	DialogDescription,
 } from '../ui/dialog';
+import { Pencil1Icon } from '@radix-ui/react-icons';
 
 export default function EditReminderDialog(props: {
 	reminder: Reminder;
@@ -22,8 +23,8 @@ export default function EditReminderDialog(props: {
 					<Button variant='default'>Edit</Button>
 				</div>
 				*/}
-				<Button>
-				Edit
+				<Button size='icon'>
+				<Pencil1Icon/>
 				</Button>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
