@@ -1,2 +1,3 @@
 [workspace]
 members = ["remind-me-gui/src-tauri", "cli", "remind"]
+resolver = "2"
