@@ -8,7 +8,7 @@ import {
 	CardContent,
 	CardFooter,
 } from '../ui/card';
-import { TrashIcon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon } from '@radix-ui/react-icons';
 import { Button } from '../ui/button';
 import { Trash } from 'lucide-react';
 import DeleteReminderDialog from './delete-reminder-dialog';
@@ -31,7 +31,12 @@ export default function ReminderCard(props: {
 							{reminder.description}
 						</CardDescription>
 					</div>
+					<div className='flex gap-2'>
+
 					<EditReminderDialog reminder={reminder} path={path} />
+					<DeleteReminderDialog path={path} name={reminder.name} />
+											
+					</div>
 				</div>
 			</CardHeader>
 			<CardContent>
@@ -45,11 +50,6 @@ export default function ReminderCard(props: {
 					</p>
 				</div>
 			</CardContent>
-			<CardFooter>
-				<div className=''>
-					<DeleteReminderDialog path={path} name={reminder.name} />
-				</div>
-			</CardFooter>
 		</Card>
 	);
 }
