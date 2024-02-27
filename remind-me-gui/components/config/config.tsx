@@ -19,7 +19,7 @@ export default function Config() {
 				setConfig(conf);
 			});
 		});
-	});
+	}, []);
 	return (
 		<div>
 			<Dialog>
