@@ -27,7 +27,7 @@ pub fn get_config_path() -> Result<PathBuf, CommandError> {
     if !path.exists() {
         println!("didn't find an existing config toml file, creating an empty one...");
         let mut f = File::create(&path)?;
-        f.write_all(b"start_minimized = true\nrun_backend_on_gui_start = true")?;
+        f.write_all(b"start_minimized = false\nrun_backend_on_gui_start = true")?;
     }
     Ok(path)
 }
