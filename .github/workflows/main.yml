@@ -45,6 +45,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "pnpm"
+          cache-dependency-path: "./remind-me-gui/pnpm-lock.yaml"
 
       - name: Install frontend dependencies
         run: pnpm install # change this to npm or pnpm depending on which one you use
