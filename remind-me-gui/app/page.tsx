@@ -10,25 +10,8 @@ import AddReminderDialog from '@/components/add-reminder-dialog';
 
 
 // TODO: 
-// FIRST, MOVE THIS TO MD FILE
-
 // double check and fix any state/effect issues
 // clean up code
-
-// UI/UX
-// add DARK MODE!!! 
-// improve looks
-// fix add/edit forms PLEASE
-// - add/save buttons close the form
-// 
-
-// FEATURES
-// add priority/timeout for reminders
-// add limits for reminders (i.e. reminders can appear once, twice, or forever)
-
-// BUGS:
-// cpu usage issue - FIXED
-// reminders are sent by powershell on windows
 
 // MISC
 // improve Releases page on the tauri action
@@ -37,12 +20,6 @@ import AddReminderDialog from '@/components/add-reminder-dialog';
 
 // DISTRIBUTION:
 // read and implement everything on tauri distribution guide
-
-// GITHUB
-// improve github page!
-// readme
-// move todos to github
-// that kind of thing
 
 // WEBSITE
 // start building website
