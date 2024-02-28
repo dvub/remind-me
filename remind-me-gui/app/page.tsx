@@ -10,6 +10,8 @@ import AddReminderDialog from '@/components/add-reminder-dialog';
 
 
 // TODO: 
+// FIRST, MOVE THIS TO MD FILE
+
 // double check and fix any state/effect issues
 // clean up code
 
