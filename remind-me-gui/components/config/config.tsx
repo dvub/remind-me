@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import * as commands from '@/src/bindings';
 import StartMinimized from './start-minimized';
 import RunBackendWithGui from './run-backend-with-gui';
+import ModeToggle from './theme-selector';
 export default function Config() {
 	let [path, setPath] = useState<string>();
 	let [config, setConfig] = useState<commands.Config>();
@@ -25,11 +26,6 @@ export default function Config() {
 			<Dialog>
 				<DialogTrigger asChild>
 					<Button size='icon' variant='default'>
-						{/*
-				<div>
-					<Button variant='default'>Add Reminder</Button>
-				</div>
-				*/}
 						<GearIcon />
 					</Button>
 				</DialogTrigger>
@@ -39,6 +35,7 @@ export default function Config() {
 						<h1 className='h1 text-xl font-bold'>Settings</h1>
 					</DialogHeader>
 					<div>
+						<ModeToggle />
 						<Autostart />
 						<StartMinimized
 							enabled={config?.start_minimized!}

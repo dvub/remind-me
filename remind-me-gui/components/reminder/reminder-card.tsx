@@ -8,11 +8,28 @@ import {
 	CardContent,
 	CardFooter,
 } from '../ui/card';
-import { TrashIcon, Pencil1Icon } from '@radix-ui/react-icons';
+import {
+	TrashIcon,
+	Pencil1Icon,
+	DotsHorizontalIcon,
+} from '@radix-ui/react-icons';
 import { Button } from '../ui/button';
 import { Trash } from 'lucide-react';
 import DeleteReminderDialog from './delete-reminder-dialog';
-
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuPortal,
+	DropdownMenuSeparator,
+	DropdownMenuShortcut,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 export default function ReminderCard(props: {
 	reminder: Reminder;
 	path: string;
@@ -32,10 +49,28 @@ export default function ReminderCard(props: {
 						</CardDescription>
 					</div>
 					<div className='flex gap-2'>
-
-					<EditReminderDialog reminder={reminder} path={path} />
-					<DeleteReminderDialog path={path} name={reminder.name} />
-											
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant='outline' size='icon'>
+									<DotsHorizontalIcon />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent>
+								<DropdownMenuItem>
+									<EditReminderDialog
+										reminder={reminder}
+										path={path}
+									/>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem>
+									<DeleteReminderDialog
+										path={path}
+										name={reminder.name}
+									/>
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</div>
 				</div>
 			</CardHeader>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card } from '../ui/card';
 import { Switch } from '../ui/switch';
 import * as commands from '@/src/bindings';
@@ -7,10 +8,13 @@ export default function StartMinimized(props: {
 	enabled: boolean;
 }) {
 	const { path, enabled } = props;
+	const [isEnabled, setIsEnabled] = useState(enabled);
+
 	const handleCheckedChange = (e: boolean) => {
 		// enabled = e;
 		console.log(e);
 		commands.updateStartMinimized(path, e);
+		setIsEnabled(e);
 	};
 	return (
 		<Card className='m-3 px-5'>
@@ -24,7 +28,7 @@ export default function StartMinimized(props: {
 					</p>
 				</div>
 				<Switch
-					checked={enabled}
+					checked={isEnabled}
 					onCheckedChange={(e) => handleCheckedChange(e)}
 				/>
 			</div>

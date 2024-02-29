@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card } from '../ui/card';
 import { Switch } from '../ui/switch';
 import * as commands from '@/src/bindings';
@@ -7,10 +8,12 @@ export default function RunBackendWithGui(props: {
 	enabled: boolean;
 }) {
 	const { path, enabled } = props;
+	const [isEnabled, setIsEnabled] = useState(enabled);
 	const handleCheckedChange = (e: boolean) => {
-		commands.updateRunBackendWithGui(path, e);
+		// enabled = e;
 		console.log(e);
-		console.log(enabled);
+		commands.updateStartMinimized(path, e);
+		setIsEnabled(e);
 	};
 	return (
 		<Card className='m-3 px-5'>
@@ -24,7 +27,7 @@ export default function RunBackendWithGui(props: {
 					</p>
 				</div>
 				<Switch
-					checked={enabled}
+					checked={isEnabled}
 					onCheckedChange={(e) => handleCheckedChange(e)}
 				/>
 			</div>
