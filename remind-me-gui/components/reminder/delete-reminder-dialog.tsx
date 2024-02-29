@@ -19,8 +19,10 @@ export default function DeleteReminderDialog(props: {
 	const { path, name } = props;
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger>
-				<Button variant='destructive' size='icon'><TrashIcon/></Button>
+			<AlertDialogTrigger asChild>
+				<Button variant='destructive' size='icon'>
+					<TrashIcon />
+				</Button>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
