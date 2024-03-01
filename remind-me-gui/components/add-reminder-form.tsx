@@ -17,19 +17,44 @@ import {
 import { DialogClose } from './ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as commands from '@/src/bindings';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Emoji } from 'emoji-picker-react';
 import { Dispatch, SetStateAction, useState } from 'react';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { FaceIcon } from '@radix-ui/react-icons';
 
 const formSchema = z.object({
 	name: z.string(),
 	description: z.string(),
-	frequency: z.coerce.number().finite().positive().int().safe(),
+	frequency: z
+		.object({
+			hours: z.coerce.number().optional(),
+			minutes: z.coerce.number().optional(),
+			seconds: z.coerce.number().optional(),
+		})
+		.refine(
+			(data) => {
+				// Check if at least one of the frequency fields is defined
+				return (
+					data.hours !== undefined ||
+					data.minutes !== undefined ||
+					data.seconds !== undefined
+				);
+			},
+			{
+				message:
+					'At least one of the frequency fields (hours, minutes, seconds) must be defined',
+			}
+		),
 	icon: z
 		.string()
 		.emoji({ message: 'This must be an emoji' })
-		.max(3, {
-			message:
-				'You may only enter a maximum of 3 emojis! (3 is already a lot in my opinion)',
+		.max(2, {
+			message: 'You may only set 1 emoji.',
 		})
 		.optional(),
 });
@@ -44,11 +69,20 @@ export default function AddReminderForm(props: {
 	});
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Adding a new reminder...', values);
-		commands.addReminder(path, values as commands.Reminder);
+
+		const freq =
+			values.frequency.hours! * 60 * 60 +
+			values.frequency.minutes! * 60 +
+			values.frequency.seconds!;
+		commands.addReminder(path, {
+			name: values.name,
+			description: values.description,
+			frequency: freq,
+			icon: values.icon as string | null,
+		});
 		setOpen(false);
 	}
 
-	const [selected, setSelected] = useState(false);
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
@@ -89,19 +123,68 @@ export default function AddReminderForm(props: {
 						</FormItem>
 					)}
 				/>
+
 				<FormField
 					control={form.control}
 					name='frequency'
-					render={({ field }) => (
+					render={() => (
 						<FormItem>
 							<FormLabel>Frequency</FormLabel>
-							<FormControl>
-								<Input placeholder='Frequency...' {...field} />
-							</FormControl>
+							<div className='w-full flex gap-5'>
+								<FormField
+									control={form.control}
+									name='frequency.hours'
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder='Hours...'
+													{...field}
+													type='number'
+												/>
+											</FormControl>
+
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name='frequency.minutes'
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder='Minutes...'
+													{...field}
+													type='number'
+												/>
+											</FormControl>
+
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name='frequency.seconds'
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder='Seconds...'
+													{...field}
+													type='number'
+												/>
+											</FormControl>
+
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
 							<FormDescription>
-								How often do you want this reminder to appear?
-								Currently, only entering values in seconds is
-								supported. (i.e. 600 seconds = 10 minutes)
+								Sets how often this reminder will occur.
 							</FormDescription>
 							<FormMessage />
 						</FormItem>
@@ -111,20 +194,49 @@ export default function AddReminderForm(props: {
 					control={form.control}
 					name='icon'
 					render={({ field }) => (
-						<FormItem onSelect={(e) => setSelected(true)}>
+						<FormItem>
 							<FormLabel>Icon</FormLabel>
 							<FormControl>
-								<Input placeholder='Icon...' {...field} />
+								<div className='relative flex items-center gap-1'>
+									<Input placeholder='Icon...' {...field} />
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												size='icon'
+												variant='outline'
+											>
+												<FaceIcon />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent>
+											<DropdownMenuItem
+												onSelect={(e) =>
+													e.preventDefault()
+												}
+											>
+												<EmojiPicker
+													onEmojiClick={(e) =>
+														form.setValue(
+															'icon',
+															e.emoji
+														)
+													}
+												/>
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
 							</FormControl>
 							<FormDescription>
 								Optionally, add an icon that will appear with
-								the reminder!
+								the reminder! (note: as of now, the emoji picker
+								is rather laggy, so be patient with it)
 							</FormDescription>
 							<FormMessage />
-							{selected && <EmojiPicker />}
 						</FormItem>
 					)}
 				/>
+
 				<div className='flex w-full justify-between'>
 					<div>
 						<Button type='submit'>Add</Button>

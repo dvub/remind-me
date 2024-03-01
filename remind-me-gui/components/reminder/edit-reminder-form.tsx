@@ -126,11 +126,6 @@ export default function EditReminderForm(props: {
 				/>
 				<div className='flex w-full justify-between'>
 					<Button type='submit'>Edit</Button>
-					<DialogClose>
-						<Button variant='default' type='button'>
-							Close
-						</Button>
-					</DialogClose>
 				</div>
 			</form>
 		</Form>
