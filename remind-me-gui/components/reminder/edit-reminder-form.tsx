@@ -17,6 +17,7 @@ import {
 import { DialogClose } from '../ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as commands from '@/src/bindings';
+import { Dispatch, SetStateAction } from 'react';
 const formSchema = z
 	.object({
 		name: z.string().optional(),
@@ -44,8 +45,9 @@ const formSchema = z
 export default function EditReminderForm(props: {
 	path: string;
 	name: string;
+	setOpen: Dispatch<SetStateAction<boolean>>;
 }) {
-	const { path, name } = props;
+	const { path, name, setOpen } = props;
 	// 1. Define your form.
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -61,6 +63,7 @@ export default function EditReminderForm(props: {
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Submitting!!', values);
 		commands.editReminder(path, name, values as commands.EditReminder);
+		setOpen(false);
 	}
 
 	return (

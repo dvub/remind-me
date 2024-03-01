@@ -10,14 +10,16 @@ import {
 } from '../ui/dialog';
 import { Pencil1Icon } from '@radix-ui/react-icons';
 import { DropdownMenuItem } from '../ui/dropdown-menu';
+import { useState } from 'react';
 
 export default function EditReminderDialog(props: {
 	reminder: Reminder;
 	path: string;
 }) {
 	const { reminder, path } = props;
+	const [open, setOpen] = useState(false);
 	return (
-		<Dialog>
+		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
 					<div className='flex gap-1 items-center'>
@@ -36,7 +38,11 @@ export default function EditReminderDialog(props: {
 					reminder.
 				</DialogDescription>
 
-				<EditReminderForm name={reminder.name} path={path} />
+				<EditReminderForm
+					name={reminder.name}
+					path={path}
+					setOpen={setOpen}
+				/>
 			</DialogContent>
 		</Dialog>
 	);
