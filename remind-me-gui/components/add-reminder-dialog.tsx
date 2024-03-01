@@ -11,11 +11,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AddReminderForm from './add-reminder-form';
 import { CardStackPlusIcon } from '@radix-ui/react-icons';
+import { useState } from 'react';
 
 export default function AddReminderDialog(props: { path: string }) {
 	const { path } = props;
+	const [open, setOpen] = useState(false);
 	return (
-		<Dialog>
+		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button size='icon'>
 					<CardStackPlusIcon />
@@ -25,12 +27,7 @@ export default function AddReminderDialog(props: { path: string }) {
 				<DialogHeader>
 					<h1 className='h1 text-xl font-bold'>New Reminder</h1>
 				</DialogHeader>
-				{/*
-				<DialogDescription>
-					Edit the current reminder.
-				</DialogDescription>
-                */}
-				<AddReminderForm path={path} />
+				<AddReminderForm path={path} setOpen={setOpen} />
 			</DialogContent>
 		</Dialog>
 	);

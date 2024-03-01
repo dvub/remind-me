@@ -9,6 +9,7 @@ import {
 	DialogDescription,
 } from '../ui/dialog';
 import { Pencil1Icon } from '@radix-ui/react-icons';
+import { DropdownMenuItem } from '../ui/dropdown-menu';
 
 export default function EditReminderDialog(props: {
 	reminder: Reminder;
@@ -18,10 +19,12 @@ export default function EditReminderDialog(props: {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<div className='flex gap-1 items-center'>
-					<Pencil1Icon />
-					Edit
-				</div>
+				<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+					<div className='flex gap-1 items-center'>
+						<Pencil1Icon />
+						Edit
+					</div>
+				</DropdownMenuItem>
 			</DialogTrigger>
 			<DialogContent className=' overflow-y-scroll max-h-[90%]'>
 				<DialogHeader>

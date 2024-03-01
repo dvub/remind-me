@@ -11,6 +11,7 @@ import { AlertDialogHeader, AlertDialogFooter } from '../ui/alert-dialog';
 import { TrashIcon } from '@radix-ui/react-icons';
 import { Button } from '../ui/button';
 import { deleteReminder } from '@/src/bindings';
+import { DropdownMenuItem } from '../ui/dropdown-menu';
 
 export default function DeleteReminderDialog(props: {
 	path: string;
@@ -20,9 +21,11 @@ export default function DeleteReminderDialog(props: {
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger asChild>
-				<div className='flex gap-1 items-center'>
-					<TrashIcon /> Delete
-				</div>
+				<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+					<div className='flex gap-1 items-center'>
+						<TrashIcon /> Delete
+					</div>
+				</DropdownMenuItem>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>

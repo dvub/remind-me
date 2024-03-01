@@ -17,6 +17,8 @@ import {
 import { DialogClose } from './ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as commands from '@/src/bindings';
+import EmojiPicker from 'emoji-picker-react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 const formSchema = z.object({
 	name: z.string(),
@@ -32,16 +34,21 @@ const formSchema = z.object({
 		.optional(),
 });
 
-export default function AddReminderForm(props: { path: string }) {
-	const { path } = props;
+export default function AddReminderForm(props: {
+	path: string;
+	setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+	const { path, setOpen } = props;
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 	});
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		console.log('Adding a new reminder...', values);
 		commands.addReminder(path, values as commands.Reminder);
+		setOpen(false);
 	}
 
+	const [selected, setSelected] = useState(false);
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
@@ -104,17 +111,17 @@ export default function AddReminderForm(props: { path: string }) {
 					control={form.control}
 					name='icon'
 					render={({ field }) => (
-						<FormItem>
+						<FormItem onSelect={(e) => setSelected(true)}>
 							<FormLabel>Icon</FormLabel>
 							<FormControl>
 								<Input placeholder='Icon...' {...field} />
 							</FormControl>
 							<FormDescription>
-								Optionally, add up to 3 emojis that will appear
-								with the reminder! (Currently there is no simple
-								way to input emojis, good luck)
+								Optionally, add an icon that will appear with
+								the reminder!
 							</FormDescription>
 							<FormMessage />
+							{selected && <EmojiPicker />}
 						</FormItem>
 					)}
 				/>
@@ -122,11 +129,6 @@ export default function AddReminderForm(props: { path: string }) {
 					<div>
 						<Button type='submit'>Add</Button>
 					</div>
-					<DialogClose>
-						<Button variant='default' type='button'>
-							Close
-						</Button>
-					</DialogClose>
 				</div>
 			</form>
 		</Form>
