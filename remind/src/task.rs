@@ -16,7 +16,6 @@ pub fn collect_and_run_tasks(
     }
 
     println!("(re)starting reminders...");
-
     // TODO: fix this LOL
 
     let hashes: Vec<u64> = get_hashes(reminders.iter().collect());
@@ -27,16 +26,42 @@ pub fn collect_and_run_tasks(
         .collect()
 }
 
+// this is the function that actually sends desktop notifications!!
+
+// TODO:
+// should this take a &Reminder?
+
 /// Sends a desktop notification on the interval specified by `Reminder`
 pub async fn start_reminder_task(reminder: Reminder) -> anyhow::Result<()> {
     println!("starting a new reminder: {}", &reminder.name);
-    loop {
-        sleep(Duration::from_secs(reminder.frequency as u64)).await;
-        let icon = reminder.icon.clone().unwrap_or_default();
-        println!("displaying reminder: {}", &reminder.name);
-        Notification::new()
-            .summary(&format!("{} Reminder: {}", icon, &reminder.name))
-            .body(&reminder.description)
-            .show()?;
-    }
+
+    // if there's a trigger limit specified, we need a for loop
+    if let Some(max_n) = reminder.trigger_limit {
+        for _ in 0..max_n {
+            sleep(Duration::from_secs(reminder.frequency as u64)).await;
+            send_notification(&reminder)?;
+        }
+        // TODO:
+        // decide whether to delete reminder after completion
+    } else {
+        // if no trigger limit is specified, just use an infinite loop
+        loop {
+            sleep(Duration::from_secs(reminder.frequency as u64)).await;
+            send_notification(&reminder)?;
+        }
+    };
+    Ok(())
+}
+// this abstraction is stupid lol
+fn send_notification(reminder: &Reminder) -> anyhow::Result<()> {
+    let icon = reminder.icon.clone().unwrap_or_default();
+    println!("displaying reminder: {}", &reminder.name);
+    Notification::new()
+        .summary(&format!("{} Reminder: {}", icon, &reminder.name))
+        .body(&reminder.description)
+        .show()?;
+
+    // TODO
+    // figure out what to do with this
+    Ok(())
 }
