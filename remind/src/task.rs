@@ -28,8 +28,7 @@ pub fn collect_and_run_tasks(
 
 // this is the function that actually sends desktop notifications!!
 
-// TODO:
-// should this take a &Reminder?
+// TODO: should this take a &Reminder?
 
 /// Sends a desktop notification on the interval specified by `Reminder`
 pub async fn start_reminder_task(reminder: Reminder) -> anyhow::Result<()> {
@@ -41,8 +40,7 @@ pub async fn start_reminder_task(reminder: Reminder) -> anyhow::Result<()> {
             sleep(Duration::from_secs(reminder.frequency as u64)).await;
             send_notification(&reminder)?;
         }
-        // TODO:
-        // decide whether to delete reminder after completion
+        // TODO: decide whether to delete reminder after completion
     } else {
         // if no trigger limit is specified, just use an infinite loop
         loop {
@@ -61,7 +59,6 @@ fn send_notification(reminder: &Reminder) -> anyhow::Result<()> {
         .body(&reminder.description)
         .show()?;
 
-    // TODO
-    // figure out what to do with this
+    // TODO figure out what to do with this
     Ok(())
 }

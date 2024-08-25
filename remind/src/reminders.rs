@@ -269,8 +269,7 @@ mod tests {
         assert!(result.is_none());
     }
 
-    // TODO:
-    // fix this
+    // TODO: fix this
     #[test]
     fn test_add_reminder() {
         let temp_dir = tempdir().unwrap();
@@ -297,8 +296,7 @@ mod tests {
         );
     }
 
-    // TODO:
-    // should this take a Reminder instead of a &str?
+    // TODO: should this take a Reminder instead of a &str?
 
     /// Testing wrapper function that takes a string of TOML and a reminder name,
     /// writes it to a file, performs the deletion, returning what remains in the file.

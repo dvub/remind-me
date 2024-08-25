@@ -40,8 +40,7 @@ pub mod commands {
     #[specta::specta]
     // call it db??
     pub fn get_path() -> Result<PathBuf, CommandError> {
-        // TODO:
-        // fix this unwrap since its on an Option
+        // TODO: fix this unwrap since its on an Option
         let project_dir = get_project_dirs();
         let data_dir = project_dir.data_dir();
         if !data_dir.exists() {
@@ -58,8 +57,7 @@ pub mod commands {
     }
 }
 
-// TODO:
-// this note can probably be removed since this codebase no longer uses daemonize.
+// TODO: this note can probably be removed since this codebase no longer uses daemonize.
 
 // important note:
 // the actual entry function (main()) cannot be marked by tokio
