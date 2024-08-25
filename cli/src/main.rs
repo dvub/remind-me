@@ -15,10 +15,12 @@ use crate::args::RemindersCommands;
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     println!();
-    println!("remind-me CLI - dvub");
+    println!("remind-me CLI");
     println!();
+
     let path = get_path()?;
-    println!("{:?}", path.display());
+
+    // println!("{:?}", path.display());
 
     match args.command {
         Commands::Control { action } => match action {
@@ -28,12 +30,17 @@ fn main() -> anyhow::Result<()> {
         },
         Commands::Reminders { action } => match action {
             RemindersCommands::Path => {
-                println!("{}", path.display());
+                println!("Configuration path: {}", path.display());
             }
             RemindersCommands::List => {
-                println!("Printing all current reminders...");
-                let all = read_all_reminders(path)?;
-                for (index, reminder) in all.iter().enumerate() {
+                // this could be logged at a more verbose level
+                // println!("Printing all current reminders...");
+                let all_reminders = read_all_reminders(path)?;
+                if all_reminders.is_empty() {
+                    println!("No reminders found.");
+                    return Ok(());
+                }
+                for (index, reminder) in all_reminders.iter().enumerate() {
                     println!();
                     println!("{}. {}", index + 1, reminder.name);
                     println!("Description: {}", reminder.description);
@@ -45,12 +52,14 @@ fn main() -> anyhow::Result<()> {
                 description,
                 frequency,
                 icon,
+                trigger_limit,
             } => {
                 let reminder = Reminder {
                     name,
                     description,
                     frequency,
                     icon,
+                    trigger_limit, // TODO: fix this
                 };
                 println!("Adding a reminder...");
                 add_reminder(path, reminder)?;
@@ -62,12 +71,14 @@ fn main() -> anyhow::Result<()> {
                 description,
                 frequency,
                 icon,
+                trigger_limit,
             } => {
                 let new_data = EditReminder {
                     name: new_name,
                     description,
                     frequency,
                     icon,
+                    trigger_limit,
                 };
                 let res = edit_reminder(path.clone(), &name, new_data)?;
                 match res {
