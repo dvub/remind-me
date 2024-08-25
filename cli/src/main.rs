@@ -13,6 +13,9 @@ mod args;
 
 use args::{Args, Commands, ControlCommands};
 
+// TODO: refactor this file somehow
+// we have an absolute nesting mess here
+
 use crate::args::RemindersCommands;
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();

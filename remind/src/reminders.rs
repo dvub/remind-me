@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{fs, path::Path};
+
+// TODO: consider encapsulation - fields should maybe not be `pub`?
+
 /// Struct to represent a reminder.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, Type)]
 pub struct Reminder {
@@ -15,6 +18,11 @@ pub struct Reminder {
     pub icon: Option<String>,
     /// The maximum number of times this reminder may be triggered before being automatically removed.
     pub trigger_limit: Option<i32>,
+    // If `trigger_limit` is specified and this boolean is true, the reminder will be deleted (removed from the file) when trigger_limit is reached.
+    // pub delete_on_completion: bool,
+    // TODO:
+    // add persistent tracker to count how many triggers are left.
+    // what if the user wants to set a 24 hour reminder for a week only?
 }
 
 impl Reminder {
