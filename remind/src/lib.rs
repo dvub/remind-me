@@ -58,6 +58,9 @@ pub mod commands {
     }
 }
 
+// TODO:
+// this note can probably be removed since this codebase no longer uses daemonize.
+
 // important note:
 // the actual entry function (main()) cannot be marked by tokio
 // or else daemonize will NOT WORK!
