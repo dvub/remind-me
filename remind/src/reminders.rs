@@ -4,19 +4,33 @@ use std::{fs, path::Path};
 /// Struct to represent a reminder.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash, Type)]
 pub struct Reminder {
+    /// The name of the reminder.
     pub name: String,
+    /// The reminder's description.
     pub description: String,
+    /// The frequency at which the reminder will trigger in seconds.
     pub frequency: i32,
+    /// An optional string which could be an emoji, etc. to help represent the reminder.
+    /// In desktop notifications, this is prepended to the name in the notification title.
     pub icon: Option<String>,
+    /// The maximum number of times this reminder may be triggered before being automatically removed.
+    pub trigger_limit: Option<i32>,
 }
 
 impl Reminder {
-    pub fn new(name: String, description: String, frequency: i32, icon: Option<String>) -> Self {
+    pub fn new(
+        name: String,
+        description: String,
+        frequency: i32,
+        icon: Option<String>,
+        trigger_limit: Option<i32>,
+    ) -> Self {
         Self {
             name,
             description,
             frequency,
             icon,
+            trigger_limit,
         }
     }
 }
@@ -27,6 +41,7 @@ pub struct EditReminder {
     pub description: Option<String>,
     pub frequency: Option<i32>,
     pub icon: Option<String>,
+    pub trigger_limit: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -80,8 +95,12 @@ pub mod commands {
     #[specta::specta]
     pub fn read_all_reminders(path: PathBuf) -> Result<Vec<Reminder>, CommandError> {
         // read the target file and parse them into a data structure
-        println!("reading configuration file for reminders...");
+
+        // this print statement should be more verbose
+        // println!("reading configuration file for reminders...");
         let toml_str = fs::read_to_string(path)?;
+
+        // this should be EXTREMELY verbose
         // println!("File content: {:?}", toml_str);
 
         if toml_str.is_empty() {
@@ -191,6 +210,7 @@ mod tests {
                 description: Some(String::from("New description!")),
                 frequency: None,
                 icon: None,
+                trigger_limit: None,
             },
         )
         .unwrap();
@@ -264,6 +284,7 @@ mod tests {
             String::from(""),
             0,
             Some("not a real icon".to_owned()),
+            None,
         );
         add_reminder(test_path.clone(), reminder).unwrap();
         // man wtf.
